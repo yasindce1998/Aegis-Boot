@@ -1,0 +1,48 @@
+## @file
+# TPM Attestation Module
+#
+# This module queries TPM Platform Configuration Registers (PCRs) and
+# validates Measured Boot integrity for defensive security research.
+#
+# Copyright (c) 2026, Aegis-Boot Research Project
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = TpmAttestation
+  FILE_GUID                      = 11223344-5566-7788-99AA-BBCCDDEEFF00
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = TpmAttestationEntry
+
+[Sources]
+  TpmAttestation.c
+  TpmAttestation.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  SecurityPkg/SecurityPkg.dec
+  CryptoPkg/CryptoPkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  UefiRuntimeServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  DebugLib
+  PrintLib
+  Tpm2CommandLib
+  Tpm2DeviceLib
+  BaseCryptLib
+
+[Protocols]
+  gEfiTcg2ProtocolGuid                          ## CONSUMES
+
+[Guids]
+  gEfiEventExitBootServicesGuid                 ## CONSUMES
+
+[Depex]
+  gEfiTcg2ProtocolGuid

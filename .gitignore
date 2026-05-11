@@ -1,0 +1,208 @@
+# Aegis-Boot .gitignore
+# Strict binary exclusions for security compliance
+
+# ============================================
+# CRITICAL: NO BINARIES ALLOWED IN REPOSITORY
+# ============================================
+# All compiled artifacts must be built from source
+# Pre-compiled binaries violate security policy
+
+# UEFI Binaries
+*.efi
+*.rom
+*.bin
+*.fd
+*.img
+*.iso
+
+# Firmware Images
+OVMF*.fd
+*.flash
+*.spi
+
+# Disk Images
+*.qcow2
+*.vdi
+*.vmdk
+*.vhd
+*.raw
+
+# Memory Dumps
+*.dmp
+*.mem
+*.dump
+
+# Build Artifacts
+Build/
+build/
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib
+
+# EDK II Specific
+Conf/build_rule.txt
+Conf/target.txt
+Conf/tools_def.txt
+Conf/.cache
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+*.egg
+
+# Logs and Databases
+*.log
+*.sql
+*.sqlite
+*.db
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.sublime-*
+*.code-workspace
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# Keys and Secrets (CRITICAL)
+*.key
+*.pem
+*.p12
+*.pfx
+*.gpg
+*.asc
+id_rsa*
+id_ed25519*
+*.secret
+
+# Exception: Keep public keys for verification
+!*.pub
+
+# vTPM State
+vtpm-state/
+*.vtpm
+
+# QEMU Runtime
+qemu-*.log
+*.qcow2.lock
+
+# Test Artifacts
+test-disk.qcow2
+test-output/
+test-results/
+
+# Backup Files
+*.backup
+backups/
+nvram-backups/
+
+# Audit Logs (Keep structure, not content)
+docs/audit/*.log
+docs/audit/*.sig
+!docs/audit/.gitkeep
+!docs/audit/README.md
+
+# SBOM Files (Generated)
+docs/SBOM-*.txt
+
+# Signing Artifacts
+*.sig
+*.signature
+
+# Exception: Keep example/template files
+!examples/**/*.efi
+!templates/**/*.bin
+
+# Environment Files (May contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Exception: Keep example environment file
+!.env.example
+
+# Compressed Archives
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.rar
+
+# Documentation Build Artifacts
+docs/_build/
+docs/.doctrees/
+
+# Coverage Reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Package Manager
+node_modules/
+package-lock.json
+yarn.lock
+
+# Rust (if used for scanner)
+target/
+Cargo.lock
+
+# Go (if used for tooling)
+vendor/
+go.sum
+
+# macOS
+.AppleDouble
+.LSOverride
+
+# Windows
+ehthumbs.db
+ehthumbs_vista.db
+
+# Linux
+.directory
+.Trash-*
+
+# ============================================
+# IMPORTANT NOTES
+# ============================================
+# 1. Never commit compiled .efi files
+# 2. Never commit firmware images (.fd, .rom)
+# 3. Never commit private keys or secrets
+# 4. Never commit disk images or memory dumps
+# 5. Audit logs are excluded but directory structure is kept
+# 6. All binaries must be reproducibly built from source
+# 7. SBOM files are generated during build, not committed
+# 8. Signing artifacts are generated, not stored in repo
+
+# Made with Bob

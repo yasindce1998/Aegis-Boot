@@ -1,0 +1,45 @@
+## @file
+# ExitBootServices Hook Module
+#
+# This module intercepts the ExitBootServices call to maintain memory
+# residency during the transition to the OS kernel. For academic research
+# purposes only, with hardware-rooted kill-switches.
+#
+# Copyright (c) 2026, Aegis-Boot Research Project
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = ExitBootHook
+  FILE_GUID                      = ABCDEF12-3456-7890-ABCD-EF1234567890
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = ExitBootHookEntry
+
+[Sources]
+  ExitBootHook.c
+  ExitBootHook.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  SecurityPkg/SecurityPkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  UefiRuntimeServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  DebugLib
+  PrintLib
+
+[Protocols]
+  gEfiLoadedImageProtocolGuid                   ## CONSUMES
+
+[Guids]
+  gEfiEventExitBootServicesGuid                 ## CONSUMES
+
+[Depex]
+  TRUE

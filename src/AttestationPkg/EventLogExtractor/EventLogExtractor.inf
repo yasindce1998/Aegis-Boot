@@ -1,0 +1,43 @@
+## @file
+# Event Log Extractor Module
+#
+# This module extracts and parses the TCG Event Log to analyze boot
+# measurements and generate detection ground truth data.
+#
+# Copyright (c) 2026, Aegis-Boot Research Project
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = EventLogExtractor
+  FILE_GUID                      = 22334455-6677-8899-AABB-CCDDEEFF1122
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = EventLogExtractorEntry
+
+[Sources]
+  EventLogExtractor.c
+  EventLogExtractor.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  SecurityPkg/SecurityPkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  DebugLib
+  PrintLib
+
+[Protocols]
+  gEfiTcg2ProtocolGuid                          ## CONSUMES
+
+[Guids]
+  gEfiEventExitBootServicesGuid                 ## CONSUMES
+
+[Depex]
+  gEfiTcg2ProtocolGuid

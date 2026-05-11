@@ -1,0 +1,52 @@
+## @file
+# DXE Injection Module
+#
+# This module demonstrates DXE phase implantation and Boot Services table
+# hooking for academic research purposes. Includes hardware-rooted kill-switches.
+#
+# Copyright (c) 2026, Aegis-Boot Research Project
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = DxeInject
+  FILE_GUID                      = 87654321-4321-4321-4321-210987654321
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = DxeInjectEntry
+
+[Sources]
+  DxeInject.c
+  DxeInject.h
+  KillSwitch.c
+  KillSwitch.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  SecurityPkg/SecurityPkg.dec
+  CryptoPkg/CryptoPkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  UefiRuntimeServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  DebugLib
+  PrintLib
+  Tpm2CommandLib
+  Tpm2DeviceLib
+  BaseCryptLib
+
+[Protocols]
+  gEfiSmbiosProtocolGuid                        ## CONSUMES
+  gEfiTcg2ProtocolGuid                          ## CONSUMES
+
+[Guids]
+  gEfiSmbiosTableGuid                           ## CONSUMES
+  gEfiAcpiTableGuid                             ## CONSUMES
+
+[Depex]
+  TRUE
