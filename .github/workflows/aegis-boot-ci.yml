@@ -10,13 +10,13 @@ on:
     - cron: '0 2 * * *'
 
 env:
-  EDK2_VERSION: edk2-stable202311
-  PYTHON_VERSION: '3.10'
+  EDK2_VERSION: edk2-stable202405
+  PYTHON_VERSION: '3.12'
 
 jobs:
   build-bootkit:
     name: Build UEFI Bootkit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     
     steps:
       - name: Checkout Aegis-Boot
@@ -64,23 +64,24 @@ jobs:
           build -a X64 -t GCC5 -p BootkitPkg/BootkitPkg.dsc
       
       - name: Upload Bootkit Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bootkit-binaries
           path: edk2/Build/BootkitPkg/DEBUG_GCC5/X64/*.efi
 
   test-scanner:
     name: Test Detection Scanner
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
       
       - name: Install Dependencies
         run: |
@@ -96,20 +97,21 @@ jobs:
           pytest tests/integration/ -v
       
       - name: Upload Coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           files: ./coverage.xml
           flags: scanner
           name: scanner-coverage
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   qemu-integration:
     name: QEMU Integration Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build-bootkit
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Install QEMU
         run: |
@@ -117,7 +119,7 @@ jobs:
           sudo apt-get install -y qemu-system-x86 ovmf
       
       - name: Download Bootkit Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: bootkit-binaries
           path: ./binaries
@@ -148,24 +150,25 @@ jobs:
 
   run-scanner:
     name: Run Aegis Scanner
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: qemu-integration
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
       
       - name: Install Scanner Dependencies
         run: |
           pip install -r tests/requirements.txt
       
       - name: Download QEMU Dumps
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: qemu-dumps
           path: ./dumps
@@ -188,7 +191,7 @@ jobs:
             results.json --format html > report.html
       
       - name: Upload Scan Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: scan-results
           path: |
@@ -197,11 +200,17 @@ jobs:
 
   security-audit:
     name: Security Audit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
       
       - name: Run Bandit (Python Security)
         run: |
@@ -214,7 +223,7 @@ jobs:
           safety check --json > safety-report.json || true
       
       - name: Upload Security Reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-reports
           path: |
@@ -223,16 +232,17 @@ jobs:
 
   documentation:
     name: Build Documentation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
       
       - name: Install Sphinx
         run: |
@@ -244,30 +254,32 @@ jobs:
           sphinx-build -b html . _build/html || echo "Sphinx not configured yet"
       
       - name: Upload Documentation
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: documentation
           path: docs/_build/html
 
   release:
     name: Create Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [build-bootkit, test-scanner, run-scanner]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
       
       - name: Create Release Package
         run: |
           mkdir -p release
-          cp -r bootkit-binaries release/
-          cp -r scan-results release/
-          cp -r documentation release/
+          cp -r artifacts/bootkit-binaries release/
+          cp -r artifacts/scan-results release/
+          cp -r artifacts/documentation release/
           tar -czf aegis-boot-release.tar.gz release/
       
       - name: Generate Release Notes
@@ -284,7 +296,7 @@ jobs:
           echo "- Documentation" >> RELEASE_NOTES.md
       
       - name: Upload Release Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release-package
           path: aegis-boot-release.tar.gz
