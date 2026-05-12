@@ -67,4 +67,4 @@ repos:
         args: ['--profile', 'black']
         files: ^src/AegisScanner/.*\.py$|^tests/.*\.py$
 
-# Made with Bob
+

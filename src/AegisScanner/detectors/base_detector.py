@@ -120,4 +120,4 @@ class BaseDetector(ABC):
         """
         return [f for f in self.findings if f.get('severity') == severity]
 
-# Made with Bob
+

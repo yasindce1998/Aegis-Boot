@@ -45,4 +45,4 @@ EOF
 echo "[+] PCR values dumped to ${OUTPUT_FILE}" >&2
 cat "${OUTPUT_FILE}"
 
-# Made with Bob
+

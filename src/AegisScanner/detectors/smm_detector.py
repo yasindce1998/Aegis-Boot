@@ -379,4 +379,4 @@ class SMMDetector(BaseDetector):
                             confidence=0.95
                         )
 
-# Made with Bob
+

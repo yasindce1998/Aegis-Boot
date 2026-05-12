@@ -298,4 +298,4 @@ class RuntimeHookDetector(BaseDetector):
             except (struct.error, IndexError) as e:
                 self.logger.warning(f"Failed to compare {service_name}: {e}")
 
-# Made with Bob
+

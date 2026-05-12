@@ -26,4 +26,4 @@ echo "pmemsave 0 0x100000000 ${OUTPUT_FILE}" | nc localhost "${QEMU_MONITOR_PORT
 echo "[+] Memory dumped to ${OUTPUT_FILE}" >&2
 cat "${OUTPUT_FILE}"
 
-# Made with Bob
+
