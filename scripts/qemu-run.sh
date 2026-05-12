@@ -368,9 +368,9 @@ main() {
     # Start vTPM
     start_vtpm
 
-    # Build QEMU command
-    local qemu_cmd
-    qemu_cmd=$(build_qemu_command)
+    # Build QEMU command as array
+    local QEMU_CMD
+    readarray -t QEMU_CMD < <(build_qemu_command)
 
     # Log audit entry (start)
     log_audit_entry "STARTED" "QEMU execution initiated"
@@ -378,7 +378,8 @@ main() {
     # Display command if debug mode
     if [[ "$DEBUG_MODE" == "true" ]]; then
         log_info "QEMU Command:"
-        echo "$qemu_cmd"
+        printf '%s ' "${QEMU_CMD[@]}"
+        echo
         echo
     fi
 
@@ -387,9 +388,9 @@ main() {
     log_info "Press Ctrl+A then X to exit QEMU"
     echo
 
-    # Run QEMU and capture exit code
+    # Run QEMU and capture exit code (array-based, no eval)
     set +e
-    eval "$qemu_cmd"
+    "${QEMU_CMD[@]}"
     local exit_code=$?
     set -e
 

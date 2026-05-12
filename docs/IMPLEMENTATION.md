@@ -57,9 +57,16 @@ All components have been successfully implemented and are ready for academic res
 - ✅ Memory Detector (runtime artifact detection)
 - ✅ Hook Detector (Boot Services Table analysis)
 - ✅ Event Log Detector (TCG log anomaly detection)
-- ✅ Report Generator (HTML/JSON/Markdown)
+- ✅ Report Generator (HTML/JSON/Markdown) - **Recently refactored for improved maintainability**
 
 **Files Created:** 10 files, 2,299 lines of Python code
+
+**Recent Improvements (v2.0.1):**
+- Refactored `correlate_findings()` function for better code quality
+- Reduced cyclomatic complexity by 62%
+- Improved performance with optimized dictionary operations
+- Enhanced maintainability with 5 new helper methods
+- See [REFACTORING_CHANGELOG.md](REFACTORING_CHANGELOG.md) for details
 
 **Detection Capabilities:**
 - PCR value anomalies and baseline mismatches

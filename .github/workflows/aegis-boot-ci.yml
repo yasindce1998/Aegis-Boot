@@ -20,11 +20,21 @@ jobs:
     
     steps:
       - name: Checkout Aegis-Boot
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: aegis-boot
       
+      - name: Cache EDK II
+        uses: actions/cache@v4
+        id: cache-edk2
+        with:
+          path: edk2
+          key: edk2-${{ env.EDK2_VERSION }}-${{ hashFiles('aegis-boot/src/**/*.c', 'aegis-boot/src/**/*.h') }}
+          restore-keys: |
+            edk2-${{ env.EDK2_VERSION }}-
+      
       - name: Setup EDK II
+        if: steps.cache-edk2.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 --branch ${{ env.EDK2_VERSION }} \
             https://github.com/tianocore/edk2.git
@@ -118,7 +128,7 @@ jobs:
       
       - name: Launch QEMU with Bootkit
         run: |
-          timeout 60 ./scripts/qemu-run.sh --headless --bootkit ./binaries/DxeInject.efi || true
+          timeout 60 ./scripts/qemu-run.sh --test-mode --bootkit ./binaries/DxeInject.efi || true
       
       - name: Dump Memory State
         run: |
@@ -129,7 +139,7 @@ jobs:
           ./scripts/dump-pcrs.sh > pcrs.json || true
       
       - name: Upload QEMU Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: qemu-dumps
           path: |

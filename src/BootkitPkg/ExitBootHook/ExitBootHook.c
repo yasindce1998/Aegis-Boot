@@ -266,18 +266,60 @@ AllocateRuntimeMemory (
   }
 
   //
-  // Allocate memory as EfiRuntimeServicesCode
-  // This ensures the OS will preserve it after ExitBootServices
+  // Allocate memory as EfiRuntimeServicesCode using AllocatePages
+  // AllocatePages is required for runtime code to ensure proper page alignment
+  // and memory protection attributes. AllocatePool is not suitable for runtime code.
   //
-  Status = gBS->AllocatePool (
+  UINTN           Pages;
+  EFI_PHYSICAL_ADDRESS  Address;
+
+  Pages = EFI_SIZE_TO_PAGES (Size);
+  Address = 0xFFFFFFFF;  // Allocate below 4GB for compatibility
+
+  Status = gBS->AllocatePages (
+                  AllocateMaxAddress,
                   EfiRuntimeServicesCode,
-                  Size,
-                  Memory
+                  Pages,
+                  &Address
                   );
 
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "[ExitBoot] Failed to allocate runtime memory: %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "[ExitBoot] Failed to allocate runtime pages: %r\n", Status));
     return Status;
+  }
+
+  *Memory = (VOID *)(UINTN)Address;
+
+  DEBUG ((
+    DEBUG_INFO,
+    "[ExitBoot] Allocated %d pages (%d bytes) at 0x%lx\n",
+    Pages,
+    Size,
+    Address
+    ));
+
+  return EFI_SUCCESS;
+}
+
+/**
+  Free runtime memory (stub - runtime memory should not be freed).
+
+  @param[in]  Memory  Pointer to memory to free.
+
+  @retval EFI_SUCCESS  Always returns success (no-op).
+
+**/
+EFI_STATUS
+FreeRuntimeMemory (
+  IN VOID  *Memory
+  )
+{
+  //
+  // Runtime memory should persist after ExitBootServices
+  // Freeing it would cause system instability
+  //
+  DEBUG ((DEBUG_WARN, "[ExitBoot] FreeRuntimeMemory called - this is a no-op\n"));
+  return EFI_SUCCESS;
   }
 
   //

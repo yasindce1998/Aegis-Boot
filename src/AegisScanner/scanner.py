@@ -19,9 +19,12 @@ from datetime import datetime
 # Detection modules
 from detectors.pcr_detector import PCRDetector
 from detectors.memory_detector import MemoryDetector
-from detectors.hook_detector import HookDetector
 from detectors.hook_detector_v2 import HookDetectorV2
 from detectors.eventlog_detector import EventLogDetector
+from detectors.entropy_analyzer import EntropyAnalyzer
+from detectors.secure_boot_detector import SecureBootDetector
+from detectors.runtime_hook_detector import RuntimeHookDetector
+from detectors.smm_detector import SMMDetector
 from reports.report_generator import ReportGenerator
 
 
@@ -38,14 +41,16 @@ class AegisScanner:
         """
         self.baseline = self._load_baseline(baseline_path) if baseline_path else None
         
-        # Choose hook detector version
-        hook_detector = HookDetectorV2(self.baseline) if use_enhanced_hook_detector else HookDetector(self.baseline)
-        
+        # Initialize detectors
         self.detectors = {
             'pcr': PCRDetector(self.baseline),
             'memory': MemoryDetector(self.baseline),
-            'hook': hook_detector,
-            'eventlog': EventLogDetector(self.baseline)
+            'hook': HookDetectorV2(self.baseline),
+            'eventlog': EventLogDetector(self.baseline),
+            'entropy': EntropyAnalyzer(),  # Uses default window size
+            'secureboot': SecureBootDetector(self.baseline),
+            'runtime': RuntimeHookDetector(self.baseline),
+            'smm': SMMDetector(self.baseline)
         }
         self.use_enhanced_hook_detector = use_enhanced_hook_detector
         self.findings = []

@@ -33,6 +33,7 @@ fi
 # Configuration
 AUDIT_LOG_DIR="${AUDIT_LOG_DIR:-$PROJECT_ROOT/docs/audit}"
 GPG_KEY_ID="${AUDIT_GPG_KEY_ID:-}"
+AUDIT_REQUIRE_SIGNING="${AUDIT_REQUIRE_SIGNING:-false}"
 
 # Default values
 EVENT_TYPE="INFO"
@@ -207,13 +208,17 @@ EOF
     echo ""
 }
 
-# Append to log file
+# Append to log file with atomic locking
 append_to_log() {
     local log_entry="$1"
     local log_file=$(get_log_file)
+    local lock_file="${log_file}.lock"
 
-    # Append entry
-    echo "$log_entry" >> "$log_file"
+    # Use flock for exclusive locking to ensure atomic append
+    (
+        flock -x 200
+        echo "$log_entry" >> "$log_file"
+    ) 200>"$lock_file"
 
     log_success "Audit entry appended to: $log_file"
 }
@@ -225,12 +230,21 @@ sign_log_file() {
 
     # Check if GPG is available
     if ! command -v gpg &> /dev/null; then
+        if [[ "$AUDIT_REQUIRE_SIGNING" == "true" ]]; then
+            log_error "GPG not available but AUDIT_REQUIRE_SIGNING=true"
+            return 1
+        fi
         log_warning "GPG not available, skipping signature"
         return 0
     fi
 
     # Check if GPG key is configured
     if [[ -z "$GPG_KEY_ID" ]]; then
+        if [[ "$AUDIT_REQUIRE_SIGNING" == "true" ]]; then
+            log_error "AUDIT_GPG_KEY_ID not set but AUDIT_REQUIRE_SIGNING=true"
+            log_error "Set AUDIT_GPG_KEY_ID in .env to enable signing"
+            return 1
+        fi
         log_warning "AUDIT_GPG_KEY_ID not set, skipping signature"
         log_info "Set AUDIT_GPG_KEY_ID in .env to enable signing"
         return 0
@@ -240,6 +254,10 @@ sign_log_file() {
     if gpg --local-user "$GPG_KEY_ID" --detach-sign --armor --output "$sig_file" "$log_file" 2>/dev/null; then
         log_success "Log file signed: $sig_file"
     else
+        if [[ "$AUDIT_REQUIRE_SIGNING" == "true" ]]; then
+            log_error "Failed to sign log file but AUDIT_REQUIRE_SIGNING=true"
+            return 1
+        fi
         log_warning "Failed to sign log file (GPG key may not be available)"
     fi
 }

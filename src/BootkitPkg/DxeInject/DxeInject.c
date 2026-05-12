@@ -174,6 +174,14 @@ InstallBootServicesHooks (
     return EFI_ALREADY_STARTED;
   }
 
+  EFI_TPL  OldTpl;
+
+  //
+  // Raise TPL to HIGH_LEVEL to prevent interruption during hook installation
+  // This ensures atomic modification of the Boot Services table
+  //
+  OldTpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
+
   //
   // Save original function pointers
   //
@@ -183,8 +191,6 @@ InstallBootServicesHooks (
 
   //
   // Install hooks
-  // NOTE: In a real implementation, we would need to handle
-  // memory protection and ensure atomic updates
   //
   gBS->AllocatePool = HookedAllocatePool;
   gBS->FreePool     = HookedFreePool;
@@ -225,6 +231,11 @@ InstallBootServicesHooks (
   //
   gRT->Hdr.CRC32 = 0;
   gRT->CalculateCrc32 (gRT, gRT->Hdr.HeaderSize, &gRT->Hdr.CRC32);
+
+  //
+  // Restore TPL after atomic hook installation
+  //
+  gBS->RestoreTPL (OldTpl);
 
   Context->HooksInstalled = TRUE;
   Context->HookCount      = 6;  // 3 original + 3 new hooks

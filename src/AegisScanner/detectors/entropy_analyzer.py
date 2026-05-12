@@ -260,8 +260,11 @@ class EntropyAnalyzer:
 
     def _report_low_entropy_findings(self, regions: List[EntropyRegion]):
         """Report low-entropy regions (informational)."""
-        if len(regions) > len(regions) * 0.5:  # >50% low entropy
-            total_low_entropy = len(regions) * self.window_size
+        total_windows = len(regions)
+        low_entropy_count = sum(1 for r in regions if r.entropy < self.LOW_ENTROPY_THRESHOLD)
+        
+        if low_entropy_count > total_windows * 0.5:  # >50% low entropy
+            total_low_entropy = low_entropy_count * self.window_size
             
             self.findings.append({
                 'detector': 'entropy',

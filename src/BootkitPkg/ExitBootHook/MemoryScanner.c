@@ -222,6 +222,14 @@ ScanMemoryForPattern (
     return NULL;
   }
 
+  //
+  // Guard against integer underflow when Size < PatternSize
+  //
+  if (Size < PatternSize) {
+    DEBUG ((DEBUG_WARN, "[MemScan] Size (%d) < PatternSize (%d), cannot scan\n", Size, PatternSize));
+    return NULL;
+  }
+
   Current = (UINT8 *)StartAddress;
   End = Current + Size - PatternSize;
   PatternBytes = (UINT8 *)Pattern;

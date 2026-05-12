@@ -165,6 +165,22 @@ CompareDates (
   IN UINT8   Day2
   );
 
+/**
+  Parse UUID string into 16-byte array.
+
+  @param[in]   UuidString  UUID string in format XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX.
+  @param[out]  UuidBytes   Buffer to receive 16-byte UUID.
+
+  @retval EFI_SUCCESS            UUID parsed successfully.
+  @retval EFI_INVALID_PARAMETER  Invalid UUID format.
+
+**/
+EFI_STATUS
+ParseUuidString (
+  IN  CONST CHAR8  *UuidString,
+  OUT UINT8        *UuidBytes
+  );
+
 #endif // __KILL_SWITCH_H__
 
 // Made with Bob

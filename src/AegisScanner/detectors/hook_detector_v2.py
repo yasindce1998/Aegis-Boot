@@ -209,38 +209,52 @@ class HookDetectorV2:
     def _discover_firmware_volumes(self, data: bytes):
         """
         Discover UEFI Firmware Volumes in memory dump.
+        Uses data.find() for initial search to handle unaligned FVs.
         
         Args:
             data: Memory dump data
         """
         offset = 0
         while offset < len(data) - 64:
-            # Look for FV signature
-            if data[offset:offset+4] == self.FV_SIGNATURE:
-                try:
-                    # Parse FV header (simplified)
-                    fv_length = struct.unpack('<Q', data[offset+32:offset+40])[0]
-                    
-                    if fv_length > 0 and fv_length < len(data):
-                        # Extract GUID
-                        guid = data[offset+16:offset+32]
-                        
-                        fv = FirmwareVolume(
-                            base_address=offset,
-                            size=fv_length,
-                            guid=guid
-                        )
-                        self.firmware_volumes.append(fv)
-                        
-                        print(f"[INFO] Discovered FV at 0x{offset:x}, size 0x{fv_length:x}")
-                        
-                        # Skip to end of this FV
-                        offset += fv_length
-                        continue
-                except:
-                    pass
+            # Use find() to locate next FV signature (handles unaligned FVs)
+            next_fv = data.find(self.FV_SIGNATURE, offset)
             
-            offset += 0x1000  # Scan in 4KB increments
+            if next_fv == -1:
+                # No more FVs found
+                break
+            
+            offset = next_fv
+            
+            try:
+                # Validate FV header structure
+                if offset + 64 > len(data):
+                    break
+                
+                # Parse FV header (simplified)
+                fv_length = struct.unpack('<Q', data[offset+32:offset+40])[0]
+                
+                # Validate FV length
+                if fv_length > 0 and fv_length < len(data) - offset and fv_length < 0x10000000:  # Max 256MB
+                    # Extract GUID
+                    guid = data[offset+16:offset+32]
+                    
+                    fv = FirmwareVolume(
+                        base_address=offset,
+                        size=fv_length,
+                        guid=guid
+                    )
+                    self.firmware_volumes.append(fv)
+                    
+                    print(f"[INFO] Discovered FV at 0x{offset:x}, size 0x{fv_length:x}")
+                    
+                    # Skip to end of this FV for next search
+                    offset += fv_length
+                else:
+                    # Invalid FV, skip past signature
+                    offset += 4
+            except (struct.error, ValueError, IndexError):
+                # Parsing error, skip past this signature
+                offset += 4
 
     def _locate_boot_services_table(self, data: bytes) -> Optional[int]:
         """Locate Boot Services Table in memory dump."""

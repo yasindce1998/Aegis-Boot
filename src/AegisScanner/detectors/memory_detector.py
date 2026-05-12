@@ -13,6 +13,12 @@ import struct
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
 
+try:
+    import ahocorasick
+    HAS_AHOCORASICK = True
+except ImportError:
+    HAS_AHOCORASICK = False
+
 
 class MemoryDetector:
     """Detector for memory-resident bootkit artifacts."""
@@ -55,6 +61,15 @@ class MemoryDetector:
         """
         self.baseline = baseline
         self.findings = []
+        
+        # Build Aho-Corasick automaton for pattern matching
+        if HAS_AHOCORASICK:
+            self.automaton = ahocorasick.Automaton()
+            for pattern, description in self.HOOK_PATTERNS:
+                self.automaton.add_word(pattern, (pattern, description))
+            self.automaton.make_automaton()
+        else:
+            self.automaton = None
 
     def detect(self, target_path: str) -> List[Dict]:
         """
@@ -158,7 +173,8 @@ class MemoryDetector:
                             },
                             'recommendation': 'Analyze allocation contents for malicious code'
                         })
-            except:
+            except (struct.error, ValueError, IndexError) as e:
+                # Handle specific parsing errors gracefully
                 continue
 
     def _is_suspicious_allocation(self, address: int, size: int) -> bool:
@@ -190,18 +206,17 @@ class MemoryDetector:
 
     def _scan_hook_trampolines(self, memory_data: bytes):
         """
-        Scan for hook trampoline code patterns.
+        Scan for hook trampoline code patterns using Aho-Corasick.
 
         Args:
             memory_data: Raw memory dump
         """
-        for pattern, description in self.HOOK_PATTERNS:
-            offset = 0
-            while True:
-                offset = memory_data.find(pattern, offset)
-                if offset == -1:
-                    break
-
+        if self.automaton:
+            # Use Aho-Corasick for O(n) multi-pattern matching
+            for offset, (pattern, description) in self.automaton.iter(memory_data):
+                # Adjust offset to start of pattern
+                offset = offset - len(pattern) + 1
+                
                 # Extract surrounding context
                 context_start = max(0, offset - 16)
                 context_end = min(len(memory_data), offset + 32)
@@ -223,8 +238,38 @@ class MemoryDetector:
                         },
                         'recommendation': 'Analyze surrounding code for hook implementation'
                     })
+        else:
+            # Fallback to naive O(n*m) search if Aho-Corasick unavailable
+            for pattern, description in self.HOOK_PATTERNS:
+                offset = 0
+                while True:
+                    offset = memory_data.find(pattern, offset)
+                    if offset == -1:
+                        break
 
-                offset += 1
+                    # Extract surrounding context
+                    context_start = max(0, offset - 16)
+                    context_end = min(len(memory_data), offset + 32)
+                    context = memory_data[context_start:context_end]
+
+                    # Check if this looks like a hook trampoline
+                    if self._is_hook_trampoline(context):
+                        self.findings.append({
+                            'detector': 'memory',
+                            'severity': 'high',
+                            'title': 'Potential hook trampoline detected',
+                            'description': f'Found instruction pattern at offset 0x{offset:x} '
+                                         f'matching hook trampoline: {description}',
+                            'details': {
+                                'offset': f'0x{offset:x}',
+                                'pattern': pattern.hex(),
+                                'context': context.hex(),
+                                'description': description
+                            },
+                            'recommendation': 'Analyze surrounding code for hook implementation'
+                        })
+
+                    offset += 1
 
     def _is_hook_trampoline(self, code: bytes) -> bool:
         """

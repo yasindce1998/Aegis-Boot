@@ -7,14 +7,26 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 from .pcr_detector import PCRDetector
 from .memory_detector import MemoryDetector
-from .hook_detector import HookDetector
+from .hook_detector_v2 import HookDetectorV2 as HookDetector
 from .eventlog_detector import EventLogDetector
+from .entropy_analyzer import EntropyAnalyzer
+from .secure_boot_detector import SecureBootDetector
+from .runtime_hook_detector import RuntimeHookDetector
+from .smm_detector import SMMDetector
+from .base_detector import BaseDetector
+from .pcr_replay import PCRReplayEngine
 
 __all__ = [
     'PCRDetector',
     'MemoryDetector',
     'HookDetector',
-    'EventLogDetector'
+    'EventLogDetector',
+    'EntropyAnalyzer',
+    'SecureBootDetector',
+    'RuntimeHookDetector',
+    'SMMDetector',
+    'BaseDetector',
+    'PCRReplayEngine'
 ]
 
 

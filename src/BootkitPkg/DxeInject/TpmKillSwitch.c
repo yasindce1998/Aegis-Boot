@@ -62,8 +62,9 @@ InitializeTpmKillSwitch (
   // Initialize expected EK (in production, load from secure storage)
   //
   if (!mExpectedEk.Initialized) {
-    DEBUG ((DEBUG_INFO, "[TPM-KS] No expected EK configured\n"));
-    DEBUG ((DEBUG_INFO, "[TPM-KS] EK validation will be skipped\n"));
+    DEBUG ((DEBUG_ERROR, "[TPM-KS] No expected EK configured\n"));
+    DEBUG ((DEBUG_ERROR, "[TPM-KS] TPM kill-switch cannot be enforced without EK\n"));
+    return EFI_SECURITY_VIOLATION;
   }
 
   return EFI_SUCCESS;
@@ -92,8 +93,8 @@ ValidateTpmEndorsementKey (
   }
 
   if (ExpectedEk == NULL || !ExpectedEk->Initialized) {
-    DEBUG ((DEBUG_INFO, "[TPM-KS] No expected EK configured, skipping validation\n"));
-    return TpmKillSwitchSuccess;
+    DEBUG ((DEBUG_ERROR, "[TPM-KS] No expected EK configured - validation FAILED\n"));
+    return TpmKillSwitchError;
   }
 
   DEBUG ((DEBUG_INFO, "[TPM-KS] Validating TPM Endorsement Key...\n"));
@@ -239,7 +240,7 @@ ValidateSignedTimestamp (
   // Load server's public key (in production, from secure storage)
   //
   PublicKeySize = sizeof (PublicKey);
-  SetMem (PublicKey, PublicKeySize, 0xAA);  // Placeholder
+  CopyMem (PublicKey, AEGIS_SERVER_PUBLIC_KEY, AEGIS_SERVER_PUBLIC_KEY_SIZE);
 
   //
   // Verify signature using RSA-SHA256
@@ -368,10 +369,21 @@ RsaVerify (
   IN UINT32  SignatureSize
   )
 {
+#ifdef AEGIS_STUB_CRYPTO
   //
-  // Stub implementation - always return TRUE for testing
+  // CRITICAL SECURITY WARNING: Stub implementation for testing only
+  // This MUST be replaced with actual cryptographic verification in production
   //
+  DEBUG ((DEBUG_ERROR, "[TPM-KS] WARNING: Using stub RSA verification - NOT SECURE!\n"));
+  DEBUG ((DEBUG_ERROR, "[TPM-KS] This build is for testing only and MUST NOT be deployed\n"));
   return TRUE;
+#else
+  //
+  // Fail-closed: Without proper crypto implementation, reject all signatures
+  //
+  DEBUG ((DEBUG_ERROR, "[TPM-KS] RSA verification not implemented - signature rejected\n"));
+  return FALSE;
+#endif
 }
 
 // Made with Bob

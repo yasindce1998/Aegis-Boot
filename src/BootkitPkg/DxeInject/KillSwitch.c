@@ -50,9 +50,12 @@ ValidateKillSwitches (
   // Check TPM EK binding
   //
   if (!ValidateTpmEk ()) {
-    DEBUG ((DEBUG_WARN, "[Aegis] TPM EK validation FAILED (may not be available in VM)\n"));
-    // Note: TPM validation is optional in QEMU environments
-    // In production, this would return KillSwitchTpmMismatch
+    DEBUG ((DEBUG_ERROR, "[Aegis] TPM EK validation FAILED\n"));
+#ifdef AEGIS_QEMU_MODE
+    DEBUG ((DEBUG_WARN, "[Aegis] QEMU mode: Allowing execution despite TPM failure\n"));
+#else
+    return KillSwitchTpmMismatch;
+#endif
   }
 
   //
@@ -80,38 +83,87 @@ ValidateUuid (
   VOID
   )
 {
-  EFI_STATUS  Status;
-  CHAR8       UuidString[64];
-  UINTN       AllowedUuidLen;
-  UINTN       CurrentUuidLen;
+  EFI_STATUS           Status;
+  EFI_SMBIOS_PROTOCOL  *Smbios;
+  EFI_SMBIOS_HANDLE    SmbiosHandle;
+  EFI_SMBIOS_TYPE      SmbiosType;
+  SMBIOS_STRUCTURE     *SmbiosRecord;
+  SMBIOS_TABLE_TYPE1   *Type1Record;
+  UINT8                *CurrentUuid;
+  UINT8                AllowedUuidBytes[16];
+  CHAR8                UuidString[64];
 
   //
-  // Get current system UUID
+  // Locate SMBIOS protocol
   //
-  Status = GetSmbiosUuid (UuidString, sizeof (UuidString));
+  Status = gBS->LocateProtocol (
+                  &gEfiSmbiosProtocolGuid,
+                  NULL,
+                  (VOID **)&Smbios
+                  );
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] Failed to get SMBIOS UUID: %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "[Aegis] Failed to locate SMBIOS protocol: %r\n", Status));
     return FALSE;
   }
+
+  //
+  // Find System Information (Type 1) table
+  //
+  SmbiosHandle = SMBIOS_HANDLE_PI_RESERVED;
+  SmbiosType   = SMBIOS_TYPE_SYSTEM_INFORMATION;
+
+  Status = Smbios->GetNext (
+                     Smbios,
+                     &SmbiosHandle,
+                     &SmbiosType,
+                     &SmbiosRecord,
+                     NULL
+                     );
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "[Aegis] Failed to get SMBIOS Type 1 table: %r\n", Status));
+    return FALSE;
+  }
+
+  Type1Record = (SMBIOS_TABLE_TYPE1 *)SmbiosRecord;
+  CurrentUuid = Type1Record->Uuid;
+
+  //
+  // Parse allowed UUID string into bytes for comparison
+  // This is defense-in-depth; primary validation is raw byte comparison
+  //
+  Status = ParseUuidString (AEGIS_ALLOWED_UUID, AllowedUuidBytes);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "[Aegis] Failed to parse allowed UUID: %r\n", Status));
+    return FALSE;
+  }
+
+  //
+  // Format current UUID for logging
+  //
+  AsciiSPrint (
+    UuidString,
+    sizeof (UuidString),
+    "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+    CurrentUuid[0], CurrentUuid[1], CurrentUuid[2], CurrentUuid[3],
+    CurrentUuid[4], CurrentUuid[5],
+    CurrentUuid[6], CurrentUuid[7],
+    CurrentUuid[8], CurrentUuid[9],
+    CurrentUuid[10], CurrentUuid[11], CurrentUuid[12], CurrentUuid[13], CurrentUuid[14], CurrentUuid[15]
+    );
 
   DEBUG ((DEBUG_INFO, "[Aegis] Current UUID: %a\n", UuidString));
   DEBUG ((DEBUG_INFO, "[Aegis] Allowed UUID: %a\n", AEGIS_ALLOWED_UUID));
 
   //
-  // Compare with allowed UUID
+  // Compare raw 16-byte UUIDs using CompareMem (defense-in-depth)
+  // This avoids string comparison issues (case sensitivity, format variations)
   //
-  AllowedUuidLen = AsciiStrLen (AEGIS_ALLOWED_UUID);
-  CurrentUuidLen = AsciiStrLen (UuidString);
-
-  if (AllowedUuidLen != CurrentUuidLen) {
-    return FALSE;
-  }
-
-  if (AsciiStrCmp (UuidString, AEGIS_ALLOWED_UUID) != 0) {
+  if (CompareMem (CurrentUuid, AllowedUuidBytes, 16) != 0) {
     DEBUG ((DEBUG_ERROR, "[Aegis] UUID mismatch!\n"));
     return FALSE;
   }
 
+  DEBUG ((DEBUG_INFO, "[Aegis] UUID validation passed\n"));
   return TRUE;
 }
 
@@ -129,26 +181,38 @@ ValidateTpmEk (
 {
   EFI_STATUS  Status;
   UINT8       EkHash[32];  // SHA-256 hash
+  UINT8       ExpectedEkHash[32];  // Expected EK hash
 
   //
   // Get TPM EK hash
   //
   Status = GetTpmEkHash (EkHash, sizeof (EkHash));
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_WARN, "[Aegis] Failed to get TPM EK: %r\n", Status));
-    //
-    // TPM may not be available in QEMU, so we allow this to pass
-    // In production deployment, this would be a hard failure
-    //
+    DEBUG ((DEBUG_ERROR, "[Aegis] Failed to get TPM EK: %r\n", Status));
+#ifdef AEGIS_QEMU_MODE
+    DEBUG ((DEBUG_WARN, "[Aegis] QEMU mode: TPM unavailable, allowing execution\n"));
     return TRUE;
+#else
+    return FALSE;
+#endif
   }
 
   //
-  // In a real implementation, we would compare against a known EK hash
-  // For now, we just log that we retrieved it
+  // Load expected EK hash (in production, from secure storage)
+  // For now, use a placeholder that must be configured
   //
-  DEBUG ((DEBUG_INFO, "[Aegis] TPM EK retrieved successfully\n"));
+  ZeroMem (ExpectedEkHash, sizeof (ExpectedEkHash));
+  
+  //
+  // Compare EK hash against expected value
+  //
+  if (CompareMem (EkHash, ExpectedEkHash, sizeof (EkHash)) != 0) {
+    DEBUG ((DEBUG_ERROR, "[Aegis] TPM EK hash mismatch\n"));
+    DEBUG ((DEBUG_ERROR, "[Aegis] This system is not authorized\n"));
+    return FALSE;
+  }
 
+  DEBUG ((DEBUG_INFO, "[Aegis] TPM EK validation passed\n"));
   return TRUE;
 }
 
@@ -230,9 +294,10 @@ ValidateExpiry (
   @param[out]  UuidString  Buffer to receive UUID string.
   @param[in]   BufferSize  Size of buffer in bytes.
 
-  @retval EFI_SUCCESS      UUID retrieved successfully.
-  @retval EFI_NOT_FOUND    SMBIOS table not found.
-  @retval Other            Error occurred.
+  @retval EFI_SUCCESS           UUID retrieved successfully.
+  @retval EFI_BUFFER_TOO_SMALL  Buffer too small for UUID string.
+  @retval EFI_NOT_FOUND         SMBIOS table not found.
+  @retval Other                 Error occurred.
 
 **/
 EFI_STATUS
@@ -248,6 +313,14 @@ GetSmbiosUuid (
   SMBIOS_STRUCTURE     *SmbiosRecord;
   SMBIOS_TABLE_TYPE1   *Type1Record;
   UINT8                *Uuid;
+
+  //
+  // Validate buffer size (UUID string requires 37 bytes: 36 chars + null terminator)
+  //
+  if (BufferSize < 37) {
+    DEBUG ((DEBUG_ERROR, "[Aegis] UUID buffer too small: %d < 37\n", BufferSize));
+    return EFI_BUFFER_TOO_SMALL;
+  }
 
   //
   // Locate SMBIOS protocol
@@ -344,6 +417,81 @@ GetTpmEkHash (
 }
 
 /**
+  Check if a year is a leap year.
+
+  @param[in]  Year  Year to check.
+
+  @retval TRUE   Year is a leap year.
+  @retval FALSE  Year is not a leap year.
+
+**/
+STATIC
+BOOLEAN
+IsLeapYear (
+  IN UINT16  Year
+  )
+{
+  //
+  // Leap year rules:
+  // - Divisible by 4: leap year
+  // - Divisible by 100: not a leap year
+  // - Divisible by 400: leap year
+  //
+  if (Year % 400 == 0) {
+    return TRUE;
+  }
+  if (Year % 100 == 0) {
+    return FALSE;
+  }
+  if (Year % 4 == 0) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+  Get number of days in a month.
+
+  @param[in]  Month  Month (1-12).
+  @param[in]  Year   Year (for leap year calculation).
+
+  @retval Number of days in the month.
+
+**/
+STATIC
+UINT8
+GetDaysInMonth (
+  IN UINT8   Month,
+  IN UINT16  Year
+  )
+{
+  STATIC CONST UINT8 DaysInMonth[12] = {
+    31,  // January
+    28,  // February (adjusted for leap year)
+    31,  // March
+    30,  // April
+    31,  // May
+    30,  // June
+    31,  // July
+    31,  // August
+    30,  // September
+    31,  // October
+    30,  // November
+    31   // December
+  };
+
+  if (Month < 1 || Month > 12) {
+    return 0;
+  }
+
+  if (Month == 2 && IsLeapYear (Year)) {
+    return 29;
+  }
+
+  return DaysInMonth[Month - 1];
+}
+
+/**
   Parse date string in YYYY-MM-DD format.
 
   @param[in]   DateString  Date string to parse.
@@ -406,15 +554,27 @@ ParseDateString (
   *Day = (UINT8)AsciiStrDecimalToUintn (DayStr);
 
   //
-  // Validate ranges
+  // Validate year range
   //
   if (*Year < 2000 || *Year > 2100) {
+    DEBUG ((DEBUG_ERROR, "[Aegis] Invalid year: %d\n", *Year));
     return FALSE;
   }
+
+  //
+  // Validate month range
+  //
   if (*Month < 1 || *Month > 12) {
+    DEBUG ((DEBUG_ERROR, "[Aegis] Invalid month: %d\n", *Month));
     return FALSE;
   }
-  if (*Day < 1 || *Day > 31) {
+
+  //
+  // Validate day range with proper days-in-month check (including leap year)
+  //
+  UINT8 MaxDays = GetDaysInMonth (*Month, *Year);
+  if (*Day < 1 || *Day > MaxDays) {
+    DEBUG ((DEBUG_ERROR, "[Aegis] Invalid day: %d for month %d (max: %d)\n", *Day, *Month, MaxDays));
     return FALSE;
   }
 
@@ -458,3 +618,67 @@ CompareDates (
 }
 
 // Made with Bob
+
+/**
+  Parse UUID string into 16-byte array.
+
+  @param[in]   UuidString  UUID string in format XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX.
+  @param[out]  UuidBytes   Buffer to receive 16-byte UUID.
+
+  @retval EFI_SUCCESS            UUID parsed successfully.
+  @retval EFI_INVALID_PARAMETER  Invalid UUID format.
+
+**/
+EFI_STATUS
+ParseUuidString (
+  IN  CONST CHAR8  *UuidString,
+  OUT UINT8        *UuidBytes
+  )
+{
+  UINTN  Len;
+  UINTN  i;
+  UINTN  ByteIndex;
+  CHAR8  HexStr[3];
+
+  if (UuidString == NULL || UuidBytes == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  Len = AsciiStrLen (UuidString);
+  if (Len != 36) {  // XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+    return EFI_INVALID_PARAMETER;
+  }
+
+  //
+  // Verify dashes are in correct positions
+  //
+  if (UuidString[8] != '-' || UuidString[13] != '-' || 
+      UuidString[18] != '-' || UuidString[23] != '-') {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  //
+  // Parse hex bytes
+  //
+  ByteIndex = 0;
+  HexStr[2] = '\0';
+
+  for (i = 0; i < 36 && ByteIndex < 16; i++) {
+    if (UuidString[i] == '-') {
+      continue;
+    }
+
+    HexStr[0] = UuidString[i];
+    HexStr[1] = UuidString[i + 1];
+    
+    UuidBytes[ByteIndex] = (UINT8)AsciiStrHexToUintn (HexStr);
+    ByteIndex++;
+    i++;  // Skip second hex digit
+  }
+
+  if (ByteIndex != 16) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  return EFI_SUCCESS;
+}

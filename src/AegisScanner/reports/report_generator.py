@@ -9,6 +9,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
 import json
+from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Optional
 from pathlib import Path
@@ -16,6 +17,10 @@ from pathlib import Path
 
 class ReportGenerator:
     """Generator for bootkit detection reports."""
+    
+    # Correlation confidence adjustments
+    ADDRESS_CORRELATION_BOOST = 1.2
+    PCR_EVENTLOG_CORRELATION_CONFIDENCE = 0.95
 
     def __init__(self, findings: List[Dict], baseline: Optional[Dict] = None):
         """
@@ -27,6 +32,286 @@ class ReportGenerator:
         """
         self.findings = findings
         self.baseline = baseline
+        self.timestamp = datetime.now()
+        self.correlated_findings = []
+
+    def correlate_findings(self) -> List[Dict]:
+        """
+        Correlate findings by address/offset and link related anomalies.
+        
+        Groups findings that:
+        1. Share the same memory address/offset
+        2. PCR mismatches linked with event log anomalies
+        3. Hook detections linked with memory allocations
+        
+        Returns:
+            List of correlated threat entries
+        """
+        self.correlated_findings = []
+        
+        # Group and collect findings
+        address_groups = self._group_findings_by_address()
+        pcr_findings, eventlog_findings = self._collect_detector_findings()
+        
+        # Create address-based correlations
+        for address, findings_list in address_groups.items():
+            if len(findings_list) > 1:
+                correlation = self._create_address_correlation(address, findings_list)
+                self.correlated_findings.append(correlation)
+        
+        # Create PCR/eventlog correlations
+        for pcr_finding in pcr_findings:
+            pcr_idx = self._get_pcr_index(pcr_finding)
+            if pcr_idx is not None:
+                related_eventlog = [
+                    e for e in eventlog_findings
+                    if self._get_pcr_index(e) == pcr_idx
+                ]
+                if related_eventlog:
+                    correlation = self._create_pcr_eventlog_correlation(
+                        pcr_finding, related_eventlog, pcr_idx
+                    )
+                    self.correlated_findings.append(correlation)
+        
+        return self.correlated_findings
+    
+    def _group_findings_by_address(self) -> Dict[str, List[Dict]]:
+        """Group findings by memory address/offset."""
+        address_groups = defaultdict(list)
+        
+        for finding in self.findings:
+            details = finding.get('details', {})
+            address = details.get('address') or details.get('offset')
+            
+            if address:
+                address_groups[address].append(finding)
+        
+        return address_groups
+    
+    def _collect_detector_findings(self) -> tuple:
+        """
+        Collect PCR and eventlog findings for correlation.
+        
+        Returns:
+            Tuple of (pcr_findings, eventlog_findings)
+        """
+        pcr_findings = []
+        eventlog_findings = []
+        
+        for finding in self.findings:
+            detector = finding.get('detector', '')
+            if detector == 'pcr_replay':
+                pcr_findings.append(finding)
+            elif detector == 'eventlog':
+                eventlog_findings.append(finding)
+        
+        return pcr_findings, eventlog_findings
+    
+    def _get_pcr_index(self, finding: Dict) -> Optional[int]:
+        """Extract PCR index from finding details."""
+        return finding.get('details', {}).get('pcr_index')
+    
+    def _get_max_severity(self, findings: List[Dict]) -> str:
+        """Get maximum severity from list of findings."""
+        severity_order = {'critical': 4, 'high': 3, 'medium': 2, 'low': 1, 'info': 0}
+        max_sev = 'info'
+        max_val = 0
+        
+        for finding in findings:
+            sev = finding.get('severity', 'info')
+            val = severity_order.get(sev, 0)
+            if val > max_val:
+                max_val = val
+                max_sev = sev
+        
+        return max_sev
+    
+    def _create_address_correlation(self, address: str, findings_list: List[Dict]) -> Dict:
+        """
+        Create correlation entry for address-grouped findings.
+        
+        Args:
+            address: Memory address/offset where findings were detected
+            findings_list: List of findings at this address
+            
+        Returns:
+            Correlation dictionary entry
+        """
+        max_severity = self._get_max_severity(findings_list)
+        avg_confidence = sum(f.get('confidence', 1.0) for f in findings_list) / len(findings_list)
+        
+        return {
+            'type': 'address_correlation',
+            'severity': max_severity,
+            'confidence': min(avg_confidence * self.ADDRESS_CORRELATION_BOOST, 1.0),
+            'title': f'Multiple threats detected at {address}',
+            'description': (
+                f'Found {len(findings_list)} related findings at address {address}. '
+                f'This correlation increases confidence of malicious activity.'
+            ),
+            'related_findings': [f.get('title') for f in findings_list],
+            'detectors': list(set(f.get('detector') for f in findings_list))
+        }
+    
+    def _create_pcr_eventlog_correlation(
+        self, 
+        pcr_finding: Dict, 
+        related_eventlog: List[Dict], 
+        pcr_idx: int
+    ) -> Dict:
+        """
+        Create correlation entry for PCR/eventlog findings.
+        
+        Args:
+            pcr_finding: PCR replay finding
+            related_eventlog: List of related event log findings
+            pcr_idx: PCR index being correlated
+            
+        Returns:
+            Correlation dictionary entry
+        """
+        return {
+            'type': 'pcr_eventlog_correlation',
+            'severity': 'critical',
+            'confidence': self.PCR_EVENTLOG_CORRELATION_CONFIDENCE,
+            'title': f'PCR {pcr_idx} mismatch correlated with event log anomaly',
+            'description': (
+                f'PCR {pcr_idx} replay mismatch is correlated with event log '
+                f'anomalies. This strongly indicates bootkit tampering with '
+                f'measured boot process.'
+            ),
+            'related_findings': [
+                pcr_finding.get('title'),
+                *[e.get('title') for e in related_eventlog]
+            ],
+            'detectors': ['pcr_replay', 'eventlog'],
+            'recommendation': (
+                'CRITICAL: Measured boot integrity compromised. '
+                'Investigate boot chain for malicious modifications.'
+            )
+        }
+        
+        return max_sev
+    
+    def generate_sarif(self, output_path: str):
+        """
+        Generate SARIF 2.1.0 report for GitHub Security integration.
+        
+        Args:
+            output_path: Path to save SARIF report
+        """
+        sarif_report = {
+            "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+            "version": "2.1.0",
+            "runs": [
+                {
+                    "tool": {
+                        "driver": {
+                            "name": "Aegis-Boot Scanner",
+                            "version": "1.0.0",
+                            "informationUri": "https://github.com/aegis-boot/scanner",
+                            "rules": self._generate_sarif_rules()
+                        }
+                    },
+                    "results": self._generate_sarif_results(),
+                    "columnKind": "utf16CodeUnits"
+                }
+            ]
+        }
+        
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(sarif_report, f, indent=2)
+    
+    def _generate_sarif_rules(self) -> List[Dict]:
+        """Generate SARIF rule definitions."""
+        rules = []
+        rule_ids = set()
+        
+        for finding in self.findings:
+            detector = finding.get('detector', 'unknown')
+            severity = finding.get('severity', 'warning')
+            
+            rule_id = f"{detector}-{severity}"
+            if rule_id not in rule_ids:
+                rule_ids.add(rule_id)
+                rules.append({
+                    "id": rule_id,
+                    "name": f"{detector.title()}Detection",
+                    "shortDescription": {
+                        "text": finding.get('title', 'Detection finding')
+                    },
+                    "fullDescription": {
+                        "text": finding.get('description', '')
+                    },
+                    "defaultConfiguration": {
+                        "level": self._severity_to_sarif_level(severity)
+                    },
+                    "properties": {
+                        "tags": [detector, "security", "bootkit"],
+                        "precision": "high" if finding.get('confidence', 1.0) > 0.8 else "medium"
+                    }
+                })
+        
+        return rules
+    
+    def _generate_sarif_results(self) -> List[Dict]:
+        """Generate SARIF results from findings."""
+        results = []
+        
+        for finding in self.findings:
+            detector = finding.get('detector', 'unknown')
+            severity = finding.get('severity', 'warning')
+            rule_id = f"{detector}-{severity}"
+            
+            result = {
+                "ruleId": rule_id,
+                "level": self._severity_to_sarif_level(severity),
+                "message": {
+                    "text": finding.get('description', '')
+                },
+                "properties": {
+                    "confidence": finding.get('confidence', 1.0),
+                    "detector": detector
+                }
+            }
+            
+            # Add location if available
+            details = finding.get('details', {})
+            if 'path' in details:
+                result["locations"] = [{
+                    "physicalLocation": {
+                        "artifactLocation": {
+                            "uri": details['path']
+                        },
+                        "region": {
+                            "startLine": details.get('line', 1),
+                            "startColumn": details.get('column', 1)
+                        }
+                    }
+                }]
+            
+            # Add recommendation as fix
+            if 'recommendation' in finding:
+                result["fixes"] = [{
+                    "description": {
+                        "text": finding['recommendation']
+                    }
+                }]
+            
+            results.append(result)
+        
+        return results
+    
+    def _severity_to_sarif_level(self, severity: str) -> str:
+        """Convert severity to SARIF level."""
+        mapping = {
+            'critical': 'error',
+            'high': 'error',
+            'medium': 'warning',
+            'low': 'note',
+            'info': 'note'
+        }
+        return mapping.get(severity, 'warning')
         self.timestamp = datetime.now()
 
     def generate_html(self, output_path: str):

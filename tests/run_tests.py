@@ -126,7 +126,7 @@ def main():
 
     # Corpus validation
     if run_all or args.corpus:
-        cmd = ['python', 'tests/validate_corpus.py']
+        cmd = ['python', 'tests/corpus_validation.py']
         
         if args.verbose:
             cmd.append('--verbose')

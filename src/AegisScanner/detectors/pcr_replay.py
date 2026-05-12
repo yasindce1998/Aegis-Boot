@@ -202,6 +202,7 @@ class PCRReplayEngine:
                         'actual': actual.hex(),
                         'algorithm': self.hash_algorithm.name
                     },
+                    'confidence': 0.98,
                     'recommendation': (
                         'Investigate event log integrity. Bootkit may have '
                         'modified measurements or bypassed TPM extensions.'
@@ -242,6 +243,139 @@ class PCRReplayEngine:
         """
         return sum(1 for h in self.extension_history 
                    if h['pcr_index'] == pcr_index)
+    
+    def detect_event_log_anomalies(
+        self,
+        events: List[Dict],
+        baseline: Optional[Dict] = None
+    ) -> List[Dict]:
+        """
+        Detect event log truncation, insertion, and ordering anomalies.
+        
+        Validates:
+        1. Event count per PCR against baseline
+        2. Exactly one EV_SEPARATOR per PCR
+        3. Monotonic event ordering (timestamps/sequence)
+        
+        Args:
+            events: List of TCG event log entries
+            baseline: Optional baseline event counts per PCR
+            
+        Returns:
+            List of findings for detected anomalies
+        """
+        findings = []
+        
+        # Track events per PCR
+        events_per_pcr = {}
+        separator_count = {}
+        last_event_time = {}
+        
+        for idx, event in enumerate(events):
+            pcr_idx = event.get('pcr_index', -1)
+            event_type = event.get('event_type', 0)
+            
+            # Count events per PCR
+            if pcr_idx not in events_per_pcr:
+                events_per_pcr[pcr_idx] = 0
+                separator_count[pcr_idx] = 0
+            events_per_pcr[pcr_idx] += 1
+            
+            # Count EV_SEPARATOR events (type 0x04)
+            if event_type == 0x04:
+                separator_count[pcr_idx] += 1
+            
+            # Check monotonic ordering
+            event_time = event.get('timestamp', idx)
+            if pcr_idx in last_event_time:
+                if event_time < last_event_time[pcr_idx]:
+                    findings.append({
+                        'detector': 'pcr_replay',
+                        'severity': 'high',
+                        'title': f'Non-monotonic event ordering in PCR {pcr_idx}',
+                        'description': (
+                            f'Event at index {idx} has timestamp {event_time} which is '
+                            f'earlier than previous event timestamp {last_event_time[pcr_idx]}. '
+                            f'This may indicate event log manipulation.'
+                        ),
+                        'details': {
+                            'pcr_index': pcr_idx,
+                            'event_index': idx,
+                            'current_time': event_time,
+                            'previous_time': last_event_time[pcr_idx]
+                        },
+                        'confidence': 0.85,
+                        'recommendation': 'Investigate event log integrity and ordering'
+                    })
+            last_event_time[pcr_idx] = event_time
+        
+        # Validate event counts against baseline
+        if baseline and 'events_per_pcr' in baseline:
+            for pcr_idx, expected_count in baseline['events_per_pcr'].items():
+                actual_count = events_per_pcr.get(pcr_idx, 0)
+                
+                # Allow small variance (±2 events) for legitimate changes
+                if abs(actual_count - expected_count) > 2:
+                    findings.append({
+                        'detector': 'pcr_replay',
+                        'severity': 'high',
+                        'title': f'Event count anomaly in PCR {pcr_idx}',
+                        'description': (
+                            f'PCR {pcr_idx} has {actual_count} events but baseline '
+                            f'expects {expected_count}. Difference of '
+                            f'{actual_count - expected_count} events may indicate '
+                            f'truncation or insertion attack.'
+                        ),
+                        'details': {
+                            'pcr_index': pcr_idx,
+                            'actual_count': actual_count,
+                            'expected_count': expected_count,
+                            'difference': actual_count - expected_count
+                        },
+                        'confidence': 0.90,
+                        'recommendation': (
+                            'Compare event logs in detail. Truncation removes evidence, '
+                            'insertion can inject fake measurements.'
+                        )
+                    })
+        
+        # Validate EV_SEPARATOR count (should be exactly 1 per PCR)
+        for pcr_idx, sep_count in separator_count.items():
+            if sep_count == 0:
+                findings.append({
+                    'detector': 'pcr_replay',
+                    'severity': 'medium',
+                    'title': f'Missing EV_SEPARATOR in PCR {pcr_idx}',
+                    'description': (
+                        f'PCR {pcr_idx} has no EV_SEPARATOR event. This separator '
+                        f'marks the transition from pre-OS to OS measurements.'
+                    ),
+                    'details': {
+                        'pcr_index': pcr_idx,
+                        'separator_count': sep_count
+                    },
+                    'confidence': 0.70,
+                    'recommendation': 'Verify event log completeness'
+                })
+            elif sep_count > 1:
+                findings.append({
+                    'detector': 'pcr_replay',
+                    'severity': 'high',
+                    'title': f'Multiple EV_SEPARATOR events in PCR {pcr_idx}',
+                    'description': (
+                        f'PCR {pcr_idx} has {sep_count} EV_SEPARATOR events but '
+                        f'should have exactly one. This may indicate event log '
+                        f'manipulation or replay attack.'
+                    ),
+                    'details': {
+                        'pcr_index': pcr_idx,
+                        'separator_count': sep_count
+                    },
+                    'confidence': 0.95,
+                    'recommendation': 'Investigate duplicate separator events'
+                })
+        
+        return findings
     
     def export_state(self) -> Dict:
         """
