@@ -92,7 +92,7 @@ class HookDetectorV2:
             'pattern': [0x48, 0xB8],  # MOV RAX, imm64
             'jmp_offset': 10,
             'jmp_opcode': [0xFF, 0xE0],  # JMP RAX
-            'size': 14,
+            'size': 12,
             'confidence': 0.95
         },
         # JMP [RIP+offset] (6 bytes)

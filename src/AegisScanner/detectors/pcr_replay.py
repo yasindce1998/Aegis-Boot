@@ -380,14 +380,14 @@ class PCRReplayEngine:
     def export_state(self) -> Dict:
         """
         Export current PCR state for debugging/logging.
-        
+
         Returns:
             Dictionary with PCR values and extension history
         """
         return {
             'algorithm': self.hash_algorithm.name,
             'pcr_values': {
-                idx: value.hex() 
+                idx: value.hex()
                 for idx, value in self.pcr_banks.items()
             },
             'extension_count': {
@@ -396,5 +396,22 @@ class PCRReplayEngine:
             },
             'history': self.extension_history
         }
+
+
+class PCRReplay(PCRReplayEngine):
+    """Backward-compatible wrapper around PCRReplayEngine."""
+
+    def _extend_pcr(self, pcr_value: bytes, event_data: bytes) -> bytes:
+        """
+        Extend a PCR value with event data (standalone computation).
+
+        Args:
+            pcr_value: Current PCR value
+            event_data: Event data digest to extend with
+
+        Returns:
+            New PCR value after extension
+        """
+        return self._hash(pcr_value + event_data)
 
 

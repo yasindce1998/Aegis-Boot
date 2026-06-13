@@ -92,6 +92,27 @@ class EntropyAnalyzer:
         
         return entropy
 
+    def analyze_regions(self, data: bytes) -> List[EntropyRegion]:
+        """
+        Analyze binary data and return all entropy regions.
+
+        Args:
+            data: Binary data to analyze
+
+        Returns:
+            List of EntropyRegion objects (both high and low entropy)
+        """
+        if not data:
+            return []
+
+        entropy_values = self.calculate_entropy(data)
+        if not entropy_values:
+            return []
+
+        high = self._detect_high_entropy_regions(data, entropy_values)
+        low = self._detect_low_entropy_regions(data, entropy_values)
+        return high + low
+
     def detect(self, firmware_path: str) -> List[Dict]:
         """
         Detect packed or encrypted sections in firmware.

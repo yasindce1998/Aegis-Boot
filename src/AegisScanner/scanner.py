@@ -17,15 +17,26 @@ from typing import Dict, List, Optional
 from datetime import datetime
 
 # Detection modules
-from detectors.pcr_detector import PCRDetector
-from detectors.memory_detector import MemoryDetector
-from detectors.hook_detector_v2 import HookDetectorV2
-from detectors.eventlog_detector import EventLogDetector
-from detectors.entropy_analyzer import EntropyAnalyzer
-from detectors.secure_boot_detector import SecureBootDetector
-from detectors.runtime_hook_detector import RuntimeHookDetector
-from detectors.smm_detector import SMMDetector
-from reports.report_generator import ReportGenerator
+try:
+    from .detectors.pcr_detector import PCRDetector
+    from .detectors.memory_detector import MemoryDetector
+    from .detectors.hook_detector_v2 import HookDetectorV2
+    from .detectors.eventlog_detector import EventLogDetector
+    from .detectors.entropy_analyzer import EntropyAnalyzer
+    from .detectors.secure_boot_detector import SecureBootDetector
+    from .detectors.runtime_hook_detector import RuntimeHookDetector
+    from .detectors.smm_detector import SMMDetector
+    from .reports.report_generator import ReportGenerator
+except ImportError:
+    from detectors.pcr_detector import PCRDetector
+    from detectors.memory_detector import MemoryDetector
+    from detectors.hook_detector_v2 import HookDetectorV2
+    from detectors.eventlog_detector import EventLogDetector
+    from detectors.entropy_analyzer import EntropyAnalyzer
+    from detectors.secure_boot_detector import SecureBootDetector
+    from detectors.runtime_hook_detector import RuntimeHookDetector
+    from detectors.smm_detector import SMMDetector
+    from reports.report_generator import ReportGenerator
 
 
 class AegisScanner:

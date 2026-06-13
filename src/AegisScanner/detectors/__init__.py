@@ -14,7 +14,7 @@ from .secure_boot_detector import SecureBootDetector
 from .runtime_hook_detector import RuntimeHookDetector
 from .smm_detector import SMMDetector
 from .base_detector import BaseDetector
-from .pcr_replay import PCRReplayEngine
+from .pcr_replay import PCRReplayEngine, PCRReplay
 
 __all__ = [
     'PCRDetector',
@@ -26,7 +26,8 @@ __all__ = [
     'RuntimeHookDetector',
     'SMMDetector',
     'BaseDetector',
-    'PCRReplayEngine'
+    'PCRReplayEngine',
+    'PCRReplay'
 ]
 
 

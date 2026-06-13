@@ -64,10 +64,13 @@ class MemoryDetector:
         
         # Build Aho-Corasick automaton for pattern matching
         if HAS_AHOCORASICK:
-            self.automaton = ahocorasick.Automaton()
-            for pattern, description in self.HOOK_PATTERNS:
-                self.automaton.add_word(pattern, (pattern, description))
-            self.automaton.make_automaton()
+            try:
+                self.automaton = ahocorasick.Automaton()
+                for pattern, description in self.HOOK_PATTERNS:
+                    self.automaton.add_word(pattern, (pattern, description))
+                self.automaton.make_automaton()
+            except TypeError:
+                self.automaton = None
         else:
             self.automaton = None
 
