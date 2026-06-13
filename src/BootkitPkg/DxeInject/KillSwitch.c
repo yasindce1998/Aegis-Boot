@@ -11,14 +11,21 @@
 
 #include "KillSwitch.h"
 #include <Library/BaseMemoryLib.h>
+#include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
+#include <Library/PrintLib.h>
 #include <IndustryStandard/SmBios.h>
 
 //
-// External configuration (set at build time)
+// Kill-switch configuration (compile-time defaults for research environment)
 //
-extern CONST CHAR8  *gAegisAllowedUuid;
-extern CONST CHAR8  *gAegisExpiryDate;
+#ifndef AEGIS_ALLOWED_UUID
+#define AEGIS_ALLOWED_UUID  "00000000-0000-0000-0000-000000000000"
+#endif
+
+#ifndef AEGIS_EXPIRY_DATE
+#define AEGIS_EXPIRY_DATE   "2027-12-31"
+#endif
 
 /**
   Validate all kill-switch mechanisms.
@@ -125,7 +132,7 @@ ValidateUuid (
   }
 
   Type1Record = (SMBIOS_TABLE_TYPE1 *)SmbiosRecord;
-  CurrentUuid = Type1Record->Uuid;
+  CurrentUuid = (UINT8 *)&Type1Record->Uuid;
 
   //
   // Parse allowed UUID string into bytes for comparison
@@ -352,7 +359,7 @@ GetSmbiosUuid (
   }
 
   Type1Record = (SMBIOS_TABLE_TYPE1 *)SmbiosRecord;
-  Uuid        = Type1Record->Uuid;
+  Uuid        = (UINT8 *)&Type1Record->Uuid;
 
   //
   // Format UUID as string: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
