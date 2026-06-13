@@ -291,7 +291,7 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-24.04
-    needs: [build-bootkit, test-scanner, run-scanner]
+    needs: [build-bootkit, test-scanner, run-scanner, documentation]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
