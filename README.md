@@ -4,13 +4,6 @@
 
 A production-ready UEFI bootkit research platform for studying firmware-level security threats and defenses.
 
-### 🎯 Key Achievements
-- ✅ **88.6% True Positive Rate** (target: ≥85%)
-- ✅ **4.4% False Positive Rate** (target: ≤5%)
-- ✅ **10,180 lines of code** across 56 files
-- ✅ **Complete CI/CD pipeline** with automated testing
-- ✅ **Comprehensive test corpus** with real-world threat models
-
 ## ⚖️ Legal & Ethical Notice
 
 This project is developed **strictly for academic research purposes** under institutional oversight:
@@ -84,7 +77,7 @@ Aegis-Boot safely models Tactics, Techniques, and Procedures (TTPs) from known i
 | Component | Technology |
 |-----------|-----------|
 | Development Kit | EDK II (UEFI Development Kit) |
-| Languages | C11, NASM Assembly |
+| Languages | C11 (EDK II), Python 3 |
 | Virtualization | QEMU + KVM + OVMF |
 | Security Module | TPM 2.0 (swtpm) |
 | Guest OS | Windows 10/11, Ubuntu Linux |
@@ -175,12 +168,6 @@ aegis-boot/
    export WORKSPACE=/path/to/edk2
    export PACKAGES_PATH=$WORKSPACE:$(pwd)/src
    
-   # Run setup script
-   ./scripts/setup-environment.sh
-   ```
-
-4. **Validate Environment**
-   ```bash
    # Run pre-flight checks
    ./scripts/validate-environment.sh
    ```
@@ -235,36 +222,14 @@ python run_tests.py --integration   # Integration tests only
 python run_tests.py --corpus        # Corpus validation
 ```
 
-## 📊 Project Statistics
+## 📊 Detection Targets
 
-| Component | Files | Lines of Code | Status |
-|-----------|-------|---------------|--------|
-| **BootkitPkg** | 24 | 4,395 | ✅ Complete |
-| **AttestationPkg** | 6 | 837 | ✅ Complete |
-| **AegisScanner** | 15 | 4,510 | ✅ Complete |
-| **Test Suite** | 8 | 1,350 | ✅ Complete |
-| **Scripts** | 7 | 1,275 | ✅ Complete |
-| **Documentation** | 12 | 25,000+ words | ✅ Complete |
-| **TOTAL** | **56** | **10,180** | ✅ Complete |
-
-### Detection Performance (Achieved)
-
-| Metric | Target | Achieved | Status |
-|--------|--------|----------|--------|
-| True Positive Rate (TPR) | ≥85% | **88.6%** | ✅ Exceeded |
-| False Positive Rate (FPR) | <5% | **4.4%** | ✅ Met |
-| True Negative Rate (TNR) | ≥95% | **96.2%** | ✅ Exceeded |
-| False Negative Rate (FNR) | ≤15% | **11.4%** | ✅ Exceeded |
-| Scan Time | <30s | **28s** | ✅ Met |
-
-### Implementation Completeness
-
-| Category | Improvements | Status |
-|----------|--------------|--------|
-| Feature Gaps | 6/6 | ✅ 100% |
-| Detection Gaps | 6/6 | ✅ 100% |
-| Infrastructure | 3/3 | ✅ 100% |
-| **TOTAL** | **15/15** | ✅ **100%** |
+| Metric | Target |
+|--------|--------|
+| True Positive Rate (TPR) | ≥85% |
+| False Positive Rate (FPR) | <5% |
+| ROC-AUC | ≥0.92 |
+| Mean Time to Detect | <500ms |
 
 ## 📝 Documentation
 
@@ -327,17 +292,10 @@ This software is provided for academic research purposes only. The authors and a
 
 ## 🎓 Research Contributions
 
-This implementation successfully models the following real-world threats:
+This project models real-world threats including BlackLotus (CVE-2023-24932), CosmicStrand, LoJax, MoonBounce, and MosaicRegressor. Key research contributions:
 
-1. **BlackLotus** (CVE-2023-24932) - Secure Boot bypass detection
-2. **CosmicStrand** - MSR hooking and syscall interception
-3. **LoJax** - SPI flash persistence mechanisms
-4. **MoonBounce** - DXE driver injection and FV modification
-5. **MosaicRegressor** - Multiple persistence mechanisms
-
-### Academic Impact
-- Novel PCR replay algorithm for TPM attestation
-- 89% reduction in false positives through FV-based detection
-- Complete CI/CD pipeline for bootkit research
-- Ground truth validation framework
+- PCR replay algorithm for TPM attestation validation
+- FV-based detection to reduce false positives
+- Automated CI/CD pipeline for bootkit research
+- Ground truth validation framework using test corpus
 
