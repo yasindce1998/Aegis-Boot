@@ -38,6 +38,7 @@ jobs:
         env:
           GIT_TERMINAL_PROMPT: 0
         run: |
+          rm -rf edk2
           git clone --depth 1 --branch ${{ env.EDK2_VERSION }} \
             https://github.com/tianocore/edk2.git
           cd edk2
