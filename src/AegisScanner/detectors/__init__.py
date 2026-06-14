@@ -13,6 +13,9 @@ from .entropy_analyzer import EntropyAnalyzer
 from .secure_boot_detector import SecureBootDetector
 from .runtime_hook_detector import RuntimeHookDetector
 from .smm_detector import SMMDetector
+from .fv_parser import FirmwareVolumeParser
+from .spi_integrity_detector import SpiIntegrityDetector
+from .self_erasure_detector import SelfErasureDetector
 from .base_detector import BaseDetector
 from .pcr_replay import PCRReplayEngine, PCRReplay
 
@@ -25,6 +28,9 @@ __all__ = [
     'SecureBootDetector',
     'RuntimeHookDetector',
     'SMMDetector',
+    'FirmwareVolumeParser',
+    'SpiIntegrityDetector',
+    'SelfErasureDetector',
     'BaseDetector',
     'PCRReplayEngine',
     'PCRReplay'

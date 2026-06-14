@@ -69,6 +69,23 @@ InitializeSpiFlashEmulator (
   }
 
   //
+  // Initialize PRx registers as disabled
+  //
+  for (Index = 0; Index < SPI_PRX_MAX_COUNT; Index++) {
+    Emulator->ProtectedRanges[Index].Enabled      = FALSE;
+    Emulator->ProtectedRanges[Index].Base          = 0;
+    Emulator->ProtectedRanges[Index].Limit         = 0;
+    Emulator->ProtectedRanges[Index].WriteProtect  = FALSE;
+    Emulator->ProtectedRanges[Index].ReadProtect   = FALSE;
+  }
+
+  Emulator->FLOCKDN              = FALSE;
+  Emulator->BiosWe               = FALSE;
+  Emulator->BiosLe               = FALSE;
+  Emulator->SmiLock              = FALSE;
+  Emulator->ProtectionBypassCount = 0;
+
+  //
   // Simulate initial flash contents (0xFF = erased)
   //
   SetMem (Emulator->FlashMemory, EMULATED_FLASH_SIZE, 0xFF);
@@ -221,6 +238,18 @@ SpiFlashWrite (
     return EFI_ACCESS_DENIED;
   }
 
+  //
+  // Check PRx protected ranges (2024+ platform protection)
+  //
+  if (IsAddressProtected (Emulator, Offset, TRUE)) {
+    DEBUG ((
+      DEBUG_WARN,
+      "[SPI-Emu] Write denied: Address 0x%x is PRx write-protected\n",
+      Offset
+      ));
+    return EFI_ACCESS_DENIED;
+  }
+
   if (SIMULATION_MODE) {
     DEBUG ((
       DEBUG_INFO,
@@ -288,6 +317,18 @@ SpiFlashErase (
       DEBUG_WARN,
       "[SPI-Emu] Erase denied: Region %d is locked\n",
       Region
+      ));
+    return EFI_ACCESS_DENIED;
+  }
+
+  //
+  // Check PRx protected ranges (2024+ platform protection)
+  //
+  if (IsAddressProtected (Emulator, Offset, TRUE)) {
+    DEBUG ((
+      DEBUG_WARN,
+      "[SPI-Emu] Erase denied: Address 0x%x is PRx write-protected\n",
+      Offset
       ));
     return EFI_ACCESS_DENIED;
   }
@@ -488,6 +529,201 @@ InstallPersistentImplant (
 }
 
 /**
+  Check if an address is protected by PRx registers.
+
+  @param[in]  Emulator    Pointer to emulator context.
+  @param[in]  Address     Flash address to check.
+  @param[in]  CheckWrite  TRUE to check write protection.
+
+  @retval TRUE   Address is protected.
+  @retval FALSE  Address is not protected.
+**/
+BOOLEAN
+EFIAPI
+IsAddressProtected (
+  IN SPI_FLASH_EMULATOR  *Emulator,
+  IN UINT32              Address,
+  IN BOOLEAN             CheckWrite
+  )
+{
+  UINT32              Index;
+  SPI_PROTECTED_RANGE *Range;
+
+  if (Emulator == NULL || !Emulator->Initialized) {
+    return FALSE;
+  }
+
+  for (Index = 0; Index < SPI_PRX_MAX_COUNT; Index++) {
+    Range = &Emulator->ProtectedRanges[Index];
+
+    if (!Range->Enabled) {
+      continue;
+    }
+
+    if (Address >= Range->Base && Address <= Range->Limit) {
+      if (CheckWrite && Range->WriteProtect) {
+        return TRUE;
+      }
+      if (!CheckWrite && Range->ReadProtect) {
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+  Configure a Protected Range register (PRx).
+
+  @param[in]  Emulator      Pointer to emulator context.
+  @param[in]  Index         PRx index (0-4).
+  @param[in]  Base          Base address (4KB aligned).
+  @param[in]  Limit         Limit address (4KB aligned).
+  @param[in]  WriteProtect  Enable write protection.
+  @param[in]  ReadProtect   Enable read protection.
+
+  @retval EFI_SUCCESS           Range configured.
+  @retval EFI_WRITE_PROTECTED   FLOCKDN is set, cannot modify.
+  @retval EFI_INVALID_PARAMETER Bad index or parameters.
+**/
+EFI_STATUS
+EFIAPI
+SpiFlashConfigureProtectedRange (
+  IN SPI_FLASH_EMULATOR  *Emulator,
+  IN UINT32              Index,
+  IN UINT32              Base,
+  IN UINT32              Limit,
+  IN BOOLEAN             WriteProtect,
+  IN BOOLEAN             ReadProtect
+  )
+{
+  if (Emulator == NULL || Index >= SPI_PRX_MAX_COUNT) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if (!Emulator->Initialized) {
+    return EFI_NOT_READY;
+  }
+
+  if (Emulator->FLOCKDN) {
+    DEBUG ((
+      DEBUG_WARN,
+      "[SPI-Emu] PRx config denied: FLOCKDN is set\n"
+      ));
+    return EFI_WRITE_PROTECTED;
+  }
+
+  if (Base > Limit) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  Emulator->ProtectedRanges[Index].Enabled      = TRUE;
+  Emulator->ProtectedRanges[Index].Base          = Base;
+  Emulator->ProtectedRanges[Index].Limit         = Limit;
+  Emulator->ProtectedRanges[Index].WriteProtect  = WriteProtect;
+  Emulator->ProtectedRanges[Index].ReadProtect   = ReadProtect;
+
+  DEBUG ((
+    DEBUG_INFO,
+    "[SPI-Emu] PR%d configured: Base=0x%x Limit=0x%x WP=%d RP=%d\n",
+    Index,
+    Base,
+    Limit,
+    WriteProtect,
+    ReadProtect
+    ));
+
+  return EFI_SUCCESS;
+}
+
+/**
+  Set Flash Lockdown (FLOCKDN) bit.
+
+  @param[in]  Emulator  Pointer to emulator context.
+
+  @retval EFI_SUCCESS  FLOCKDN set.
+**/
+EFI_STATUS
+EFIAPI
+SpiFlashSetFlockdn (
+  IN SPI_FLASH_EMULATOR  *Emulator
+  )
+{
+  if (Emulator == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if (!Emulator->Initialized) {
+    return EFI_NOT_READY;
+  }
+
+  Emulator->FLOCKDN = TRUE;
+
+  DEBUG ((
+    DEBUG_INFO,
+    "[SPI-Emu] FLOCKDN set — PRx registers locked until reset\n"
+    ));
+
+  return EFI_SUCCESS;
+}
+
+/**
+  Emulate TOCTOU bypass of SPI write protections.
+
+  Models the race condition used by LoJax/MosaicRegressor.
+
+  @param[in]  Emulator  Pointer to emulator context.
+  @param[in]  Offset    Target offset for bypass write.
+  @param[in]  Size      Size of bypass write.
+  @param[in]  Buffer    Data to write.
+
+  @retval EFI_SUCCESS   Bypass simulated and logged.
+**/
+EFI_STATUS
+EFIAPI
+SpiFlashBypassWrite (
+  IN SPI_FLASH_EMULATOR  *Emulator,
+  IN UINT32              Offset,
+  IN UINT32              Size,
+  IN UINT8               *Buffer
+  )
+{
+  if (Emulator == NULL || Buffer == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if (!Emulator->Initialized) {
+    return EFI_NOT_READY;
+  }
+
+  if (Offset + Size > Emulator->FlashSize) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  Emulator->ProtectionBypassCount++;
+
+  DEBUG ((DEBUG_INFO, "\n"));
+  DEBUG ((DEBUG_INFO, "==========================================\n"));
+  DEBUG ((DEBUG_INFO, "[SPI-Emu] TOCTOU BYPASS SIMULATION #%d\n", Emulator->ProtectionBypassCount));
+  DEBUG ((DEBUG_INFO, "==========================================\n"));
+  DEBUG ((DEBUG_INFO, "  Target:    0x%x (size 0x%x)\n", Offset, Size));
+  DEBUG ((DEBUG_INFO, "  Technique: Race BiosWe clear vs SMI handler\n"));
+  DEBUG ((DEBUG_INFO, "  Real-world: LoJax (2018), MosaicRegressor (2020)\n"));
+  DEBUG ((DEBUG_INFO, "  Status:    SIMULATED (no actual bypass)\n"));
+  DEBUG ((DEBUG_INFO, "==========================================\n\n"));
+
+  if (SIMULATION_MODE) {
+    DEBUG ((
+      DEBUG_INFO,
+      "[SPI-Emu] SIMULATION: Bypass write logged but not executed\n"
+      ));
+  }
+
+  return EFI_SUCCESS;
+}
+
+/**
   Log emulator statistics.
 
   @param[in]  Emulator  Pointer to emulator context.
@@ -530,7 +766,33 @@ LogEmulatorStatistics (
       Emulator->RegionLocked[Index] ? "LOCKED" : "UNLOCKED"
       ));
   }
-  
+
+  DEBUG ((DEBUG_INFO, "\n"));
+  DEBUG ((DEBUG_INFO, "Platform Protection (2024+):\n"));
+  DEBUG ((DEBUG_INFO, "  FLOCKDN:       %a\n", Emulator->FLOCKDN ? "SET" : "CLEAR"));
+  DEBUG ((DEBUG_INFO, "  BIOS WE:       %a\n", Emulator->BiosWe ? "ENABLED" : "DISABLED"));
+  DEBUG ((DEBUG_INFO, "  BIOS LE:       %a\n", Emulator->BiosLe ? "ENABLED" : "DISABLED"));
+  DEBUG ((DEBUG_INFO, "  SMI Lock:      %a\n", Emulator->SmiLock ? "SET" : "CLEAR"));
+  DEBUG ((DEBUG_INFO, "  Bypass Count:  %d\n", Emulator->ProtectionBypassCount));
+  DEBUG ((DEBUG_INFO, "\n"));
+  DEBUG ((DEBUG_INFO, "Protected Ranges (PRx):\n"));
+
+  for (Index = 0; Index < SPI_PRX_MAX_COUNT; Index++) {
+    if (Emulator->ProtectedRanges[Index].Enabled) {
+      DEBUG ((
+        DEBUG_INFO,
+        "  PR%d: 0x%08x-0x%08x [%a%a]\n",
+        Index,
+        Emulator->ProtectedRanges[Index].Base,
+        Emulator->ProtectedRanges[Index].Limit,
+        Emulator->ProtectedRanges[Index].WriteProtect ? "WP" : "",
+        Emulator->ProtectedRanges[Index].ReadProtect ? " RP" : ""
+        ));
+    } else {
+      DEBUG ((DEBUG_INFO, "  PR%d: DISABLED\n", Index));
+    }
+  }
+
   DEBUG ((DEBUG_INFO, "========================================\n\n"));
 }
 

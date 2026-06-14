@@ -26,6 +26,9 @@ try:
     from .detectors.secure_boot_detector import SecureBootDetector
     from .detectors.runtime_hook_detector import RuntimeHookDetector
     from .detectors.smm_detector import SMMDetector
+    from .detectors.fv_parser import FirmwareVolumeParser
+    from .detectors.spi_integrity_detector import SpiIntegrityDetector
+    from .detectors.self_erasure_detector import SelfErasureDetector
     from .reports.report_generator import ReportGenerator
 except ImportError:
     from detectors.pcr_detector import PCRDetector
@@ -36,6 +39,9 @@ except ImportError:
     from detectors.secure_boot_detector import SecureBootDetector
     from detectors.runtime_hook_detector import RuntimeHookDetector
     from detectors.smm_detector import SMMDetector
+    from detectors.fv_parser import FirmwareVolumeParser
+    from detectors.spi_integrity_detector import SpiIntegrityDetector
+    from detectors.self_erasure_detector import SelfErasureDetector
     from reports.report_generator import ReportGenerator
 
 
@@ -58,10 +64,13 @@ class AegisScanner:
             'memory': MemoryDetector(self.baseline),
             'hook': HookDetectorV2(self.baseline),
             'eventlog': EventLogDetector(self.baseline),
-            'entropy': EntropyAnalyzer(),  # Uses default window size
+            'entropy': EntropyAnalyzer(),
             'secureboot': SecureBootDetector(self.baseline),
             'runtime': RuntimeHookDetector(self.baseline),
-            'smm': SMMDetector(self.baseline)
+            'smm': SMMDetector(self.baseline),
+            'firmware_volume': FirmwareVolumeParser(),
+            'spi_integrity': SpiIntegrityDetector(self.baseline),
+            'self_erasure': SelfErasureDetector(self.baseline),
         }
         self.use_enhanced_hook_detector = use_enhanced_hook_detector
         self.findings = []
@@ -99,7 +108,7 @@ class AegisScanner:
 
         # Determine which scans to run
         if scan_types is None:
-            scan_types = ['pcr', 'memory', 'hook', 'eventlog']
+            scan_types = list(self.detectors.keys())
 
         # Run each detector
         for scan_type in scan_types:
@@ -285,8 +294,12 @@ def main():
     parser.add_argument(
         '--scan-types',
         nargs='+',
-        choices=['pcr', 'memory', 'hook', 'eventlog'],
-        help='Types of scans to perform'
+        choices=[
+            'pcr', 'memory', 'hook', 'eventlog', 'entropy',
+            'secureboot', 'runtime', 'smm', 'firmware_volume',
+            'spi_integrity', 'self_erasure'
+        ],
+        help='Types of scans to perform (default: all)'
     )
     
     parser.add_argument(

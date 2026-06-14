@@ -43,6 +43,22 @@
 #define FLASH_READ_PROTECTED          BIT1
 
 //
+// PRx Register Count (Intel PCH supports up to 5 Protected Range registers)
+//
+#define SPI_PRX_MAX_COUNT  5
+
+//
+// SPI Protected Range Register (models Intel PCH PR0-PR4)
+//
+typedef struct {
+  BOOLEAN   Enabled;
+  UINT32    Base;           // Protected range base address (4KB aligned)
+  UINT32    Limit;          // Protected range limit address (4KB aligned)
+  BOOLEAN   WriteProtect;   // Write protection enabled
+  BOOLEAN   ReadProtect;    // Read protection enabled
+} SPI_PROTECTED_RANGE;
+
+//
 // Emulated flash size (16MB typical)
 //
 #define EMULATED_FLASH_SIZE  (16 * 1024 * 1024)
@@ -51,14 +67,23 @@
 // SPI Flash Emulator Context
 //
 typedef struct {
-  UINT32    Signature;
-  BOOLEAN   Initialized;
-  UINT8     *FlashMemory;          // Emulated flash contents
-  UINT32    FlashSize;
-  BOOLEAN   RegionLocked[5];       // Lock status for each region
-  UINT32    WriteCount;            // Number of write operations
-  UINT32    EraseCount;            // Number of erase operations
-  BOOLEAN   PersistenceInstalled;  // Whether implant is installed
+  UINT32              Signature;
+  BOOLEAN             Initialized;
+  UINT8               *FlashMemory;          // Emulated flash contents
+  UINT32              FlashSize;
+  BOOLEAN             RegionLocked[5];       // Lock status for each region
+  UINT32              WriteCount;            // Number of write operations
+  UINT32              EraseCount;            // Number of erase operations
+  BOOLEAN             PersistenceInstalled;  // Whether implant is installed
+  //
+  // 2024+ Platform Protection (Intel PCH PRx registers)
+  //
+  SPI_PROTECTED_RANGE ProtectedRanges[SPI_PRX_MAX_COUNT];
+  BOOLEAN             FLOCKDN;              // Flash Lockdown — locks PRx config
+  BOOLEAN             BiosWe;               // BIOS Write Enable
+  BOOLEAN             BiosLe;               // BIOS Lock Enable (SMI on BiosWe change)
+  BOOLEAN             SmiLock;              // SMI Lock (prevents SMI handler changes)
+  UINT32              ProtectionBypassCount; // TOCTOU bypass attempts logged
 } SPI_FLASH_EMULATOR;
 
 #define SPI_FLASH_EMULATOR_SIGNATURE  SIGNATURE_32('S','P','I','E')
@@ -176,6 +201,91 @@ EFI_STATUS
 EFIAPI
 InstallPersistentImplant (
   IN SPI_FLASH_EMULATOR  *Emulator
+  );
+
+/**
+  Configure a Protected Range register (PRx).
+
+  Models Intel PCH PR0-PR4 registers. Once FLOCKDN is set,
+  no further changes to protected ranges are allowed.
+
+  @param[in]  Emulator      Pointer to emulator context.
+  @param[in]  Index         PRx index (0-4).
+  @param[in]  Base          Base address (4KB aligned).
+  @param[in]  Limit         Limit address (4KB aligned).
+  @param[in]  WriteProtect  Enable write protection.
+  @param[in]  ReadProtect   Enable read protection.
+
+  @retval EFI_SUCCESS           Range configured.
+  @retval EFI_WRITE_PROTECTED   FLOCKDN is set, cannot modify.
+  @retval EFI_INVALID_PARAMETER Bad index or parameters.
+**/
+EFI_STATUS
+EFIAPI
+SpiFlashConfigureProtectedRange (
+  IN SPI_FLASH_EMULATOR  *Emulator,
+  IN UINT32              Index,
+  IN UINT32              Base,
+  IN UINT32              Limit,
+  IN BOOLEAN             WriteProtect,
+  IN BOOLEAN             ReadProtect
+  );
+
+/**
+  Set Flash Lockdown (FLOCKDN) bit.
+
+  Once set, PRx registers cannot be reconfigured until next reset.
+  This models the hardware behavior where firmware sets PRx then locks.
+
+  @param[in]  Emulator  Pointer to emulator context.
+
+  @retval EFI_SUCCESS  FLOCKDN set.
+**/
+EFI_STATUS
+EFIAPI
+SpiFlashSetFlockdn (
+  IN SPI_FLASH_EMULATOR  *Emulator
+  );
+
+/**
+  Check if an address is protected by PRx registers.
+
+  @param[in]  Emulator      Pointer to emulator context.
+  @param[in]  Address       Flash address to check.
+  @param[in]  CheckWrite    TRUE to check write protection.
+
+  @retval TRUE   Address is protected.
+  @retval FALSE  Address is not protected.
+**/
+BOOLEAN
+EFIAPI
+IsAddressProtected (
+  IN SPI_FLASH_EMULATOR  *Emulator,
+  IN UINT32              Address,
+  IN BOOLEAN             CheckWrite
+  );
+
+/**
+  Emulate TOCTOU bypass of SPI write protections.
+
+  Models the race condition exploited by LoJax/MosaicRegressor where
+  the attacker clears BiosWe between the SMI handler check and the
+  actual write operation. Simulation only.
+
+  @param[in]  Emulator  Pointer to emulator context.
+  @param[in]  Offset    Target offset for bypass write.
+  @param[in]  Size      Size of bypass write.
+  @param[in]  Buffer    Data to write.
+
+  @retval EFI_SUCCESS   Bypass simulated and logged.
+**/
+EFI_STATUS
+EFIAPI
+SpiFlashBypassWrite (
+  IN SPI_FLASH_EMULATOR  *Emulator,
+  IN UINT32              Offset,
+  IN UINT32              Size,
+  IN UINT8               *Buffer
   );
 
 /**
