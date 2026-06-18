@@ -125,108 +125,48 @@ jobs:
           name: scanner-coverage
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  qemu-integration:
-    name: QEMU Integration Test
+  qemu-e2e:
+    name: QEMU End-to-End Test
     runs-on: ubuntu-24.04
     needs: build-bootkit
-    
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-      
-      - name: Install QEMU
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y qemu-system-x86 ovmf
-      
-      - name: Download Bootkit Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: bootkit-binaries
-          path: ./binaries
-      
-      - name: Create QEMU Disk Image
-        run: |
-          qemu-img create -f qcow2 test-disk.qcow2 1G
-      
-      - name: Launch QEMU with Bootkit
-        run: |
-          timeout 60 ./scripts/qemu-run.sh --test-mode --bootkit ./binaries/DxeInject.efi || true
-      
-      - name: Dump Memory State
-        run: |
-          ./scripts/dump-memory.sh > memory-dump.bin || true
-      
-      - name: Dump PCR Values
-        run: |
-          ./scripts/dump-pcrs.sh > pcrs.json || true
-      
-      - name: Upload QEMU Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: qemu-dumps
-          path: |
-            memory-dump.bin
-            pcrs.json
 
-  run-scanner:
-    name: Run Aegis Scanner
-    runs-on: ubuntu-24.04
-    needs: qemu-integration
-    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-      
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
-      
-      - name: Install Scanner Dependencies
+
+      - name: Install Dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 ovmf mtools swtpm socat tpm2-tools
           pip install -r tests/requirements.txt
-      
-      - name: Download QEMU Dumps
+
+      - name: Download Bootkit Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: qemu-dumps
-          path: ./dumps
-      
-      - name: Run Scanner
-        run: |
-          python3 src/AegisScanner/scanner.py \
-            --target ./dumps/memory-dump.bin \
-            --format json || true
-          cp scan_results.json results.json
-      
-      - name: Validate Results
-        continue-on-error: true
-        run: |
-          python3 tests/validate_ci_results.py results.json
+          name: bootkit-binaries
+          path: ./binaries
 
-      - name: Generate HTML Report
-        continue-on-error: true
+      - name: Run QEMU E2E Test
         run: |
-          python3 -c "
-          import json, sys
-          sys.path.insert(0, 'src/AegisScanner')
-          from reports.report_generator import ReportGenerator
-          with open('results.json') as f:
-              data = json.load(f)
-          gen = ReportGenerator(data.get('findings', []))
-          with open('report.html', 'w') as f:
-              f.write(gen.generate_html())
-          "
-      
-      - name: Upload Scan Results
+          chmod +x scripts/qemu-e2e.sh
+          ./scripts/qemu-e2e.sh ./binaries
+
+      - name: Upload E2E Artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: scan-results
+          name: qemu-e2e-results
           path: |
-            results.json
-            report.html
+            build/e2e/dumps/memory-dump.bin
+            build/e2e/dumps/pcrs.json
+            build/e2e/dumps/serial.log
+            build/e2e/dumps/scan_results.json
 
   security-audit:
     name: Security Audit
@@ -293,7 +233,7 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-24.04
-    needs: [build-bootkit, test-scanner, run-scanner, documentation]
+    needs: [build-bootkit, test-scanner, qemu-e2e, documentation]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
@@ -309,7 +249,7 @@ jobs:
         run: |
           mkdir -p release
           cp -r artifacts/bootkit-binaries release/ 2>/dev/null || true
-          cp -r artifacts/scan-results release/ 2>/dev/null || true
+          cp -r artifacts/qemu-e2e-results release/ 2>/dev/null || true
           cp -r artifacts/documentation release/ 2>/dev/null || true
           tar -czf aegis-boot-release.tar.gz release/
       
