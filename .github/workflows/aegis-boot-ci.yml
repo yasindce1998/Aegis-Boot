@@ -81,6 +81,7 @@ jobs:
       - name: Build Bootkit Package
         run: |
           cd edk2
+          rm -f Conf/BuildEnv.sh
           source edksetup.sh
           build -a X64 -t GCC5 -p BootkitPkg/BootkitPkg.dsc
       
