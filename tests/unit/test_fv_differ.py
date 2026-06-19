@@ -55,79 +55,90 @@ def _make_firmware_file(guid: str, file_type: int = 0x07,
 
 
 def _make_fv_header() -> bytes:
-    """Create a minimal _FVH signature block."""
-    # Simplified: just enough to be found by the parser
+    """Create a minimal _FVH signature block (parser-compatible)."""
     header = bytearray(64)
-    header[0:16] = b'\x00' * 16  # zero vector
-    header[16:20] = b'_FVH'  # FV signature at offset 40... actually
+    header[0:4] = b'_FVH'
     return bytes(header)
+
+
+def _guid_to_bytes(guid_str: str) -> bytes:
+    """Convert a GUID string to its 16-byte little-endian representation."""
+    parts = guid_str.split('-')
+    b = struct.pack('<IHH', int(parts[0], 16), int(parts[1], 16), int(parts[2], 16))
+    b += bytes.fromhex(parts[3]) + bytes.fromhex(parts[4])
+    return b
 
 
 def _build_firmware_image(volumes: list) -> bytes:
     """
     Build a minimal firmware image with FV headers and FFS entries.
 
+    The FirmwareVolumeParser scans for '_FVH' at 0x1000-aligned offsets.
+    When found at offset N, it reads:
+      N+0..15:  "zero vector" (ignored, first 4 bytes are _FVH itself)
+      N+16..31: GUID (16 bytes, parsed as LE GUID)
+      N+32..39: FV length (u64 LE)
+      N+44..47: attributes (u32 LE)
+      N+48..49: header length (u16 LE)
+    Files start at N + header_length.
+
     Each volume is a dict: {'guid': str, 'files': [{'guid': str, 'type': int, 'data': bytes}]}
     """
     image = bytearray()
 
     for vol in volumes:
-        vol_start = len(image)
+        # Pad to 0x1000 alignment so parser can find _FVH
+        if len(image) % 0x1000 != 0:
+            pad = 0x1000 - (len(image) % 0x1000)
+            image.extend(b'\xFF' * pad)
 
-        # FV header (simplified - 72 bytes minimum)
-        fv_header = bytearray(72)
-        # Zero vector (16 bytes)
-        fv_header[0:16] = b'\x00' * 16
-        # GUID (16 bytes at offset 16) - use vol guid
-        parts = vol['guid'].split('-')
-        guid_bytes = struct.pack('<IHH', int(parts[0], 16), int(parts[1], 16), int(parts[2], 16))
-        guid_bytes += bytes.fromhex(parts[3]) + bytes.fromhex(parts[4])
-        fv_header[16:32] = guid_bytes
-        # FV length (8 bytes at offset 32) - placeholder, fill later
-        # Signature '_FVH' at offset 40
-        fv_header[40:44] = b'_FVH'
-        # Attributes (4 bytes at offset 44)
+        vol_start = len(image)
+        header_len = 56  # minimal header size (must be 8-byte aligned)
+
+        # FV header
+        fv_header = bytearray(header_len)
+        # _FVH at byte 0 (parser searches for this at 0x1000-aligned offsets)
+        fv_header[0:4] = b'_FVH'
+        fv_header[4:16] = b'\x00' * 12
+        # GUID at byte 16
+        fv_header[16:32] = _guid_to_bytes(vol['guid'])
+        # FV length at byte 32 - placeholder, fill later
+        # attributes at byte 44
         struct.pack_into('<I', fv_header, 44, 0x0004FEFF)
-        # Header length (2 bytes at offset 48)
-        struct.pack_into('<H', fv_header, 48, 72)
-        # Revision (1 byte at offset 55)
-        fv_header[55] = 0x02
+        # header length at byte 48
+        struct.pack_into('<H', fv_header, 48, header_len)
 
         image.extend(fv_header)
 
         # FFS files
         for f in vol.get('files', []):
             file_data = f.get('data', b'\x90' * 32)
+            # 8-byte align before each file
+            padding = (8 - (len(image) % 8)) % 8
+            image.extend(b'\xFF' * padding)
+
             # FFS file header (24 bytes)
             ffs_header = bytearray(24)
-            # File GUID (16 bytes)
-            fparts = f['guid'].split('-')
-            fguid = struct.pack('<IHH', int(fparts[0], 16), int(fparts[1], 16), int(fparts[2], 16))
-            fguid += bytes.fromhex(fparts[3]) + bytes.fromhex(fparts[4])
-            ffs_header[0:16] = fguid
-            # Integrity check (2 bytes at offset 16)
+            ffs_header[0:16] = _guid_to_bytes(f['guid'])
+            # Integrity check
             ffs_header[16] = 0xAA
             ffs_header[17] = 0x55
-            # File type (1 byte at offset 18)
+            # File type
             ffs_header[18] = f.get('type', 0x07)
-            # Attributes (1 byte at offset 19)
+            # Attributes
             ffs_header[19] = 0x00
-            # Size (3 bytes at offset 20, little-endian 24-bit)
+            # Size (3 bytes LE 24-bit) = header + data
             total_size = 24 + len(file_data)
             ffs_header[20] = total_size & 0xFF
             ffs_header[21] = (total_size >> 8) & 0xFF
             ffs_header[22] = (total_size >> 16) & 0xFF
-            # State (1 byte at offset 23)
+            # State
             ffs_header[23] = 0xF8
 
             image.extend(ffs_header)
             image.extend(file_data)
 
-            # 8-byte align
-            padding = (8 - (len(image) % 8)) % 8
-            image.extend(b'\xFF' * padding)
-
-        # Update FV length
+        # Update FV length (must cover all content)
         vol_size = len(image) - vol_start
         struct.pack_into('<Q', image, vol_start + 32, vol_size)
 
