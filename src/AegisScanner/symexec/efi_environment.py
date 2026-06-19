@@ -8,6 +8,7 @@ paths through EFI code regardless of runtime state.
 Copyright (c) 2026, Aegis-Boot Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import IntEnum
