@@ -37,7 +37,7 @@ class TestScannerIntegration:
         """Test scanner initializes correctly."""
         assert self.scanner is not None
         assert self.scanner.baseline is None
-        assert len(self.scanner.detectors) == 12
+        assert len(self.scanner.detectors) == 13
         assert 'pcr' in self.scanner.detectors
         assert 'memory' in self.scanner.detectors
         assert 'hook' in self.scanner.detectors
@@ -49,6 +49,8 @@ class TestScannerIntegration:
         assert 'firmware_volume' in self.scanner.detectors
         assert 'spi_integrity' in self.scanner.detectors
         assert 'self_erasure' in self.scanner.detectors
+        assert 'pcr_oracle' in self.scanner.detectors
+        assert 'firmware_differ' in self.scanner.detectors
 
     def test_scanner_with_baseline(self):
         """Test scanner with baseline configuration."""

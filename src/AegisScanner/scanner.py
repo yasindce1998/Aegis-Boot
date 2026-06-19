@@ -30,6 +30,7 @@ try:
     from .detectors.spi_integrity_detector import SpiIntegrityDetector
     from .detectors.self_erasure_detector import SelfErasureDetector
     from .pcr_oracle.oracle import PCROracle
+    from .differ import FirmwareDiffer, SemanticAnalyzer, DiffReportGenerator, BaselineDB
     from .reports.report_generator import ReportGenerator
 except ImportError:
     from detectors.pcr_detector import PCRDetector
@@ -44,22 +45,53 @@ except ImportError:
     from detectors.spi_integrity_detector import SpiIntegrityDetector
     from detectors.self_erasure_detector import SelfErasureDetector
     from pcr_oracle.oracle import PCROracle
+    from differ import FirmwareDiffer, SemanticAnalyzer, DiffReportGenerator, BaselineDB
     from reports.report_generator import ReportGenerator
+
+
+class FirmwareDifferDetector:
+    """Wrapper that adapts FirmwareDiffer to the scanner's detect() interface."""
+
+    def __init__(self, baseline_firmware: Optional[str] = None):
+        self.baseline_firmware = baseline_firmware
+        self.differ = FirmwareDiffer()
+        self.analyzer = SemanticAnalyzer()
+
+    def detect(self, target_path: str) -> List[Dict]:
+        if not self.baseline_firmware:
+            return [{
+                'detector': 'firmware_differ',
+                'severity': 'info',
+                'title': 'No baseline firmware configured for diffing',
+                'description': 'Use --diff-baseline to specify a known-good firmware image.',
+                'details': {},
+            }]
+
+        diff_result = self.differ.diff(self.baseline_firmware, target_path)
+        if not diff_result.has_changes:
+            return []
+
+        classifications = self.analyzer.analyze(diff_result)
+        report_gen = DiffReportGenerator(diff_result, classifications)
+        return report_gen.get_scanner_findings()
 
 
 class AegisScanner:
     """Main scanner engine for bootkit detection."""
 
-    def __init__(self, baseline_path: Optional[str] = None, use_enhanced_hook_detector: bool = True):
+    def __init__(self, baseline_path: Optional[str] = None,
+                 diff_baseline: Optional[str] = None,
+                 use_enhanced_hook_detector: bool = True):
         """
         Initialize the scanner.
 
         Args:
             baseline_path: Path to baseline configuration file
+            diff_baseline: Path to known-good firmware image for diffing
             use_enhanced_hook_detector: Use HookDetectorV2 with FV validation (default: True)
         """
         self.baseline = self._load_baseline(baseline_path) if baseline_path else None
-        
+
         # Initialize detectors
         self.detectors = {
             'pcr': PCRDetector(self.baseline),
@@ -74,6 +106,7 @@ class AegisScanner:
             'spi_integrity': SpiIntegrityDetector(self.baseline),
             'self_erasure': SelfErasureDetector(self.baseline),
             'pcr_oracle': PCROracle(),
+            'firmware_differ': FirmwareDifferDetector(diff_baseline),
         }
         self.use_enhanced_hook_detector = use_enhanced_hook_detector
         self.findings = []
@@ -300,9 +333,15 @@ def main():
         choices=[
             'pcr', 'memory', 'hook', 'eventlog', 'entropy',
             'secureboot', 'runtime', 'smm', 'firmware_volume',
-            'spi_integrity', 'self_erasure', 'pcr_oracle'
+            'spi_integrity', 'self_erasure', 'pcr_oracle',
+            'firmware_differ'
         ],
         help='Types of scans to perform (default: all)'
+    )
+
+    parser.add_argument(
+        '--diff-baseline',
+        help='Path to known-good firmware image for differential analysis'
     )
     
     parser.add_argument(
@@ -338,7 +377,10 @@ def main():
     args = parser.parse_args()
 
     # Initialize scanner
-    scanner = AegisScanner(baseline_path=args.baseline)
+    scanner = AegisScanner(
+        baseline_path=args.baseline,
+        diff_baseline=args.diff_baseline,
+    )
 
     # Validation mode
     if args.validate:
