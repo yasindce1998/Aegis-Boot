@@ -34,6 +34,7 @@ try:
     from .differ import FirmwareDiffer, SemanticAnalyzer, DiffReportGenerator, BaselineDB
     from .attestation import ProvenanceExtractor, TrustScorer, SBOMGenerator, SBOMFormat, AttestationGraph
     from .introspection import IntrospectionRunner, IntrospectionConfig, EventStream, LiveDetector, LiveFinding
+    from .timetravel import TraceRecorder, RecordingConfig, TraceReplayer, TraceAnalyzer, Timeline
     from .reports.report_generator import ReportGenerator
 except ImportError:
     from detectors.pcr_detector import PCRDetector
@@ -52,6 +53,7 @@ except ImportError:
     from differ import FirmwareDiffer, SemanticAnalyzer, DiffReportGenerator, BaselineDB
     from attestation import ProvenanceExtractor, TrustScorer, SBOMGenerator, SBOMFormat, AttestationGraph
     from introspection import IntrospectionRunner, IntrospectionConfig, EventStream, LiveDetector, LiveFinding
+    from timetravel import TraceRecorder, RecordingConfig, TraceReplayer, TraceAnalyzer, Timeline
     from reports.report_generator import ReportGenerator
 
 
@@ -229,6 +231,66 @@ class IntrospectionDetector:
         return findings
 
 
+class TimeTravelDetector:
+    """Wrapper that adapts Time-Travel Debugging to the scanner's detect() interface."""
+
+    def __init__(self, trace_path=None, bst_address=0):
+        self.trace_path = trace_path
+        self.bst_address = bst_address
+
+    def detect(self, target_path: str) -> List[Dict]:
+        if not self.trace_path:
+            return [{
+                'detector': 'timetravel',
+                'severity': 'info',
+                'title': 'No trace file configured for time-travel analysis',
+                'description': 'Use --trace-file to specify a recorded execution trace (.agtt).',
+                'details': {},
+            }]
+
+        try:
+            analyzer = TraceAnalyzer(Path(self.trace_path), bst_base=self.bst_address)
+            analyzer.load(cache_events=True)
+        except Exception as e:
+            return [{
+                'detector': 'timetravel',
+                'severity': 'error',
+                'title': f'Failed to load trace: {e}',
+                'description': str(e),
+                'details': {},
+            }]
+
+        findings = []
+        bst_mods = analyzer.find_all_bst_modifications()
+        for mod in bst_mods:
+            findings.append({
+                'detector': 'timetravel',
+                'severity': 'critical',
+                'title': f'BST hook detected: {mod.details["service_name"]}',
+                'description': (
+                    f'Instruction at 0x{mod.details["modifying_pc"]:x} modified '
+                    f'{mod.details["service_name"]} from 0x{mod.details["old_value"]:x} '
+                    f'to 0x{mod.details["new_value"]:x}'
+                ),
+                'details': mod.details,
+            })
+
+        timeline = Timeline(Path(self.trace_path), bst_base=self.bst_address)
+        timeline.build_from_trace()
+        summary = timeline.summary()
+
+        if not findings:
+            findings.append({
+                'detector': 'timetravel',
+                'severity': 'info',
+                'title': 'Time-travel analysis clean',
+                'description': f'Analyzed {analyzer.event_count} events, no BST modifications found.',
+                'details': summary,
+            })
+
+        return findings
+
+
 class AegisScanner:
     """Main scanner engine for bootkit detection."""
 
@@ -263,6 +325,7 @@ class AegisScanner:
             'firmware_differ': FirmwareDifferDetector(diff_baseline),
             'attestation': AttestationDetector(),
             'live': IntrospectionDetector(),
+            'timetravel': TimeTravelDetector(),
         }
         self.use_enhanced_hook_detector = use_enhanced_hook_detector
         self.findings = []
@@ -491,6 +554,7 @@ def main():
             'secureboot', 'runtime', 'smm', 'firmware_volume',
             'spi_integrity', 'self_erasure', 'mbr', 'pcr_oracle',
             'firmware_differ', 'adversarial', 'attestation', 'live',
+            'timetravel',
         ],
         help='Types of scans to perform (default: all)'
     )
@@ -513,6 +577,18 @@ def main():
     parser.add_argument(
         '--diff-baseline',
         help='Path to known-good firmware image for differential analysis'
+    )
+
+    parser.add_argument(
+        '--trace-file',
+        help='Path to recorded execution trace (.agtt) for time-travel analysis'
+    )
+
+    parser.add_argument(
+        '--bst-address',
+        type=lambda x: int(x, 0),
+        default=0,
+        help='BST base address for time-travel analysis (hex, e.g. 0x7EF4018)'
     )
     
     parser.add_argument(
@@ -552,6 +628,13 @@ def main():
         baseline_path=args.baseline,
         diff_baseline=args.diff_baseline,
     )
+
+    # Configure time-travel detector if trace file specified
+    if hasattr(args, 'trace_file') and args.trace_file:
+        scanner.detectors['timetravel'] = TimeTravelDetector(
+            trace_path=args.trace_file,
+            bst_address=args.bst_address,
+        )
 
     # Validation mode
     if args.validate:
