@@ -168,6 +168,7 @@ class HookDetectorV2:
         """
         self.findings = []
         self.firmware_volumes = []
+        self.scanned_regions = set()
 
         # Load target data
         target_data = self._load_target(target_path)
@@ -586,6 +587,154 @@ class HookDetectorV2:
                         pattern_type='riscv_auipc_ld_jalr',
                         confidence=pattern['confidence']
                     ))
+
+        # --- Additional x86_64 patterns (advanced obfuscation) ---
+
+        # PUSH imm32; RET pattern (6 bytes) - pushes 32-bit address and returns to it
+        if (address + 6 <= len(data) and
+            data[address] == 0x68 and
+            data[address + 5] == 0xC3):
+            target = struct.unpack('<I', data[address+1:address+5])[0]
+            trampolines.append(TrampolinePattern(
+                address=address,
+                target=target,
+                pattern_type='push_ret',
+                confidence=0.85
+            ))
+
+        # MOV [RSP], lo32; MOV [RSP+4], hi32; RET (17 bytes)
+        if (address + 17 <= len(data) and
+            data[address:address+4] == b'\x48\xC7\x04\x24' and
+            data[address+8:address+12] == b'\xC7\x44\x24\x04' and
+            data[address+16] == 0xC3):
+            lo = struct.unpack('<I', data[address+4:address+8])[0]
+            hi = struct.unpack('<I', data[address+12:address+16])[0]
+            target = lo | (hi << 32)
+            trampolines.append(TrampolinePattern(
+                address=address,
+                target=target,
+                pattern_type='mov_stack_ret',
+                confidence=0.90
+            ))
+
+        # NOP sled followed by MOV RAX, imm64; JMP RAX
+        if (address + 16 <= len(data) and data[address] == 0x90):
+            nop_end = address
+            while nop_end < min(address + 16, len(data)) and data[nop_end] == 0x90:
+                nop_end += 1
+            nop_count = nop_end - address
+            if (nop_count >= 4 and nop_end + 12 <= len(data) and
+                data[nop_end] == 0x48 and data[nop_end+1] == 0xB8 and
+                data[nop_end+10] == 0xFF and data[nop_end+11] == 0xE0):
+                target = struct.unpack('<Q', data[nop_end+2:nop_end+10])[0]
+                trampolines.append(TrampolinePattern(
+                    address=address,
+                    target=target,
+                    pattern_type='nop_sled_mov_jmp',
+                    confidence=0.80
+                ))
+
+        # PUSH RBX; MOV RBX, imm64(dead); POP RBX; MOV RAX, imm64; JMP RAX (junk insertion)
+        if (address + 24 <= len(data) and
+            data[address] == 0x53 and
+            data[address+1:address+3] == b'\x48\xBB' and
+            data[address+11] == 0x5B and
+            data[address+12] == 0x48 and data[address+13] == 0xB8 and
+            data[address+22] == 0xFF and data[address+23] == 0xE0):
+            target = struct.unpack('<Q', data[address+14:address+22])[0]
+            trampolines.append(TrampolinePattern(
+                address=address,
+                target=target,
+                pattern_type='junk_insert_mov_jmp',
+                confidence=0.85
+            ))
+
+        # LEA RAX, [RIP+offset]; JMP RAX (7+ bytes, target at RIP+offset location)
+        if (address + 9 <= len(data) and
+            data[address:address+3] == b'\x48\x8D\x05' and
+            data[address+7] == 0xFF and data[address+8] == 0xE0):
+            rel32 = struct.unpack('<i', data[address+3:address+7])[0]
+            target_pos = address + 7 + rel32
+            if target_pos + 8 <= len(data) and target_pos >= 0:
+                target = struct.unpack('<Q', data[target_pos:target_pos+8])[0]
+                trampolines.append(TrampolinePattern(
+                    address=address,
+                    target=target,
+                    pattern_type='lea_jmp',
+                    confidence=0.85
+                ))
+
+        # CALL $+5; POP RCX; MOV RAX, [RCX+11]; JMP RAX (12 bytes + literal pool)
+        if (address + 16 <= len(data) and
+            data[address:address+5] == b'\xE8\x00\x00\x00\x00' and
+            data[address+5] == 0x59 and
+            data[address+6:address+10] == b'\x48\x8B\x41\x0B' and
+            data[address+10] == 0xFF and data[address+11] == 0xE0):
+            pool_addr = address + 5 + 11
+            if pool_addr + 8 <= len(data):
+                target = struct.unpack('<Q', data[pool_addr:pool_addr+8])[0]
+                trampolines.append(TrampolinePattern(
+                    address=address,
+                    target=target,
+                    pattern_type='call_pop_jmp',
+                    confidence=0.90
+                ))
+
+        # XOR-encoded: MOV RAX, enc; MOV RCX, key; XOR RAX, RCX; JMP RAX (25 bytes)
+        if (address + 25 <= len(data) and
+            data[address:address+2] == b'\x48\xB8' and
+            data[address+10:address+12] == b'\x48\xB9' and
+            data[address+20:address+23] == b'\x48\x31\xC8' and
+            data[address+23:address+25] == b'\xFF\xE0'):
+            encoded = struct.unpack('<Q', data[address+2:address+10])[0]
+            key_mask = struct.unpack('<Q', data[address+12:address+20])[0]
+            target = encoded ^ key_mask
+            trampolines.append(TrampolinePattern(
+                address=address,
+                target=target,
+                pattern_type='xor_decode_jmp',
+                confidence=0.90
+            ))
+
+        # MULTI_STAGE: JMP short (0xEB) to second stage with MOV RAX; JMP RAX
+        if (address + 2 <= len(data) and data[address] == 0xEB):
+            rel8 = data[address + 1]
+            if rel8 > 0x7F:
+                rel8 = rel8 - 256
+            stage2 = address + 2 + rel8
+            if (stage2 >= 0 and stage2 + 12 <= len(data) and
+                data[stage2] == 0x48 and data[stage2+1] == 0xB8 and
+                data[stage2+10] == 0xFF and data[stage2+11] == 0xE0):
+                target = struct.unpack('<Q', data[stage2+2:stage2+10])[0]
+                trampolines.append(TrampolinePattern(
+                    address=address,
+                    target=target,
+                    pattern_type='multi_stage_jmp',
+                    confidence=0.85
+                ))
+
+        # --- Additional ARM64 patterns ---
+
+        # MOVZ/MOVK/MOVK/MOVK X16 + BR X16 (20 bytes)
+        if (address + 20 <= len(data)):
+            instr0 = struct.unpack('<I', data[address:address+4])[0]
+            instr4 = struct.unpack('<I', data[address+16:address+20])[0]
+            if ((instr0 & 0xFF80001F) == 0xD2800010 and  # MOVZ X16, #imm
+                instr4 == 0xD61F0200):                    # BR X16
+                lo16 = (instr0 >> 5) & 0xFFFF
+                instr1 = struct.unpack('<I', data[address+4:address+8])[0]
+                instr2 = struct.unpack('<I', data[address+8:address+12])[0]
+                instr3 = struct.unpack('<I', data[address+12:address+16])[0]
+                hi16 = (instr1 >> 5) & 0xFFFF
+                hi32 = (instr2 >> 5) & 0xFFFF
+                hi48 = (instr3 >> 5) & 0xFFFF
+                target = lo16 | (hi16 << 16) | (hi32 << 32) | (hi48 << 48)
+                trampolines.append(TrampolinePattern(
+                    address=address,
+                    target=target,
+                    pattern_type='aarch64_movz_movk_br',
+                    confidence=0.90
+                ))
 
         return trampolines
 

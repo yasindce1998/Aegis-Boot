@@ -8,7 +8,7 @@
 
 [Defines]
   PLATFORM_NAME                  = BootkitPkg
-  PLATFORM_GUID                  = 12345678-AAAA-BBBB-CCCC-AARCH64PKG01
+  PLATFORM_GUID                  = 12345678-AAAA-BBBB-CCCC-AA6C64010201
   PLATFORM_VERSION               = 2.0
   DSC_SPECIFICATION              = 0x00010005
   OUTPUT_DIRECTORY               = Build/BootkitPkgAarch64
