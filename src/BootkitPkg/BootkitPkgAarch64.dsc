@@ -35,4 +35,4 @@
   BootkitPkg/Aarch64/Aarch64DxeInject.inf
 
 [BuildOptions]
-  GCC:*_*_AARCH64_CC_FLAGS = -DAEGIS_BOOT_RESEARCH=1 -Wall -Wno-unused-parameter -Werror=implicit-function-declaration
+  GCC:*_*_AARCH64_CC_FLAGS = -DAEGIS_BOOT_RESEARCH=1 -Wall -Wno-unused-parameter -Werror=implicit-function-declaration -fno-stack-protector
