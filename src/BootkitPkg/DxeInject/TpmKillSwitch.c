@@ -3,7 +3,7 @@
 
   Provides enhanced security through TPM-based validation mechanisms.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 

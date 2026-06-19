@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-# Aegis-Boot Build Automation Script
+# Barzakh Build Automation Script
 #
 # This script automates the compilation of all EDK II packages for the
-# Aegis-Boot project, including SBOM generation, artifact signing, and
+# Barzakh project, including SBOM generation, artifact signing, and
 # build verification.
 #
 # USAGE:
@@ -34,7 +34,7 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
 fi
 
 # Default configuration
-WORKSPACE="${WORKSPACE:-$HOME/aegis-workspace/edk2}"
+WORKSPACE="${WORKSPACE:-$HOME/barzakh-workspace/edk2}"
 PACKAGES_PATH="${PACKAGES_PATH:-$WORKSPACE:$PROJECT_ROOT/src}"
 TARGET="${TARGET:-DEBUG}"
 TOOL_CHAIN_TAG="${TOOL_CHAIN_TAG:-GCC5}"
@@ -144,7 +144,7 @@ validate_environment() {
 
     # Check signing keys (unless skipped)
     if [[ "$SKIP_SIGNING" == "false" ]]; then
-        local signing_key="${ARTIFACT_SIGNING_KEY:-$HOME/aegis-workspace/keys/artifact-signing-key}"
+        local signing_key="${ARTIFACT_SIGNING_KEY:-$HOME/barzakh-workspace/keys/artifact-signing-key}"
         if [[ ! -f "$signing_key" ]]; then
             log_warning "Artifact signing key not found: $signing_key"
             log_warning "Generate with: ssh-keygen -t ed25519 -f $signing_key"
@@ -245,7 +245,7 @@ generate_sbom() {
     local sbom_file="$PROJECT_ROOT/docs/SBOM-$(date +%Y%m%d-%H%M%S).txt"
 
     cat > "$sbom_file" <<EOF
-# Aegis-Boot Software Bill of Materials (SBOM)
+# Barzakh Software Bill of Materials (SBOM)
 # Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 ## Build Configuration
@@ -312,7 +312,7 @@ sign_artifacts() {
 
     log_info "Signing build artifacts..."
 
-    local signing_key="${ARTIFACT_SIGNING_KEY:-$HOME/aegis-workspace/keys/artifact-signing-key}"
+    local signing_key="${ARTIFACT_SIGNING_KEY:-$HOME/barzakh-workspace/keys/artifact-signing-key}"
     local build_dir="$WORKSPACE/Build"
 
     if [[ ! -d "$build_dir" ]]; then
@@ -329,7 +329,7 @@ sign_artifacts() {
             log_info "[DRY RUN] Would sign: $efi_file"
         else
             # Create signature using ssh-keygen
-            ssh-keygen -Y sign -f "$signing_key" -n aegis-boot "$efi_file" > "$sig_file" 2>/dev/null
+            ssh-keygen -Y sign -f "$signing_key" -n barzakh "$efi_file" > "$sig_file" 2>/dev/null
             
             if [[ -f "$sig_file" ]]; then
                 log_success "Signed: $(basename "$efi_file")"
@@ -388,7 +388,7 @@ verify_artifacts() {
 main() {
     parse_args "$@"
 
-    log_info "=== Aegis-Boot Build System ==="
+    log_info "=== Barzakh Build System ==="
     log_info "Target: $TARGET"
     log_info "Architecture: $TARGET_ARCH"
     log_info "Toolchain: $TOOL_CHAIN_TAG"
@@ -423,7 +423,7 @@ main() {
         log_info "Expected packages:"
         log_info "  - BootkitPkg (DXE injection and hooking)"
         log_info "  - AttestationPkg (TPM querying and telemetry)"
-        log_info "  - AegisScanner (Detection engine)"
+        log_info "  - BarzakhScanner (Detection engine)"
     else
         for pkg_entry in "${packages[@]}"; do
             IFS=':' read -r pkg_name pkg_dsc <<< "$pkg_entry"

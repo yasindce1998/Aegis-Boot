@@ -3,7 +3,7 @@ Integration Tests for PCR Replay with Scanner
 
 Tests the complete PCR replay workflow integrated with the scanner.
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
@@ -17,8 +17,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.AegisScanner.detectors.pcr_detector import PCRDetector
-from src.AegisScanner.detectors.pcr_replay import HashAlgorithm
+from src.BarzakhScanner.detectors.pcr_detector import PCRDetector
+from src.BarzakhScanner.detectors.pcr_replay import HashAlgorithm
 
 
 class TestPCRReplayIntegration(unittest.TestCase):

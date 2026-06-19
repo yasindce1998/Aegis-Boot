@@ -5,7 +5,7 @@
   for academic research purposes. Includes comprehensive kill-switches
   and telemetry logging.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -21,8 +21,8 @@
 // Global hook context
 //
 STATIC AEGIS_HOOK_CONTEXT  mHookContext = {
-  .Signature       = AEGIS_BOOT_SIGNATURE,
-  .Version         = AEGIS_BOOT_VERSION,
+  .Signature       = BARZAKH_SIGNATURE,
+  .Version         = BARZAKH_VERSION,
   .HooksInstalled  = FALSE,
   .HookCount       = 0,
   .InstallTime     = 0
@@ -44,8 +44,8 @@ STATIC SPI_FLASH_EMULATOR  mSpiEmulator = {
 //
 // Configuration strings (set at build time)
 //
-CONST CHAR8  *gAegisAllowedUuid = AEGIS_ALLOWED_UUID;
-CONST CHAR8  *gAegisExpiryDate  = AEGIS_EXPIRY_DATE;
+CONST CHAR8  *gBarzakhAllowedUuid = AEGIS_ALLOWED_UUID;
+CONST CHAR8  *gBarzakhExpiryDate  = AEGIS_EXPIRY_DATE;
 
 /**
   Entry point for the DXE Inject driver.
@@ -70,8 +70,8 @@ DxeInjectEntry (
 
   DEBUG ((DEBUG_INFO, "\n"));
   DEBUG ((DEBUG_INFO, "========================================\n"));
-  DEBUG ((DEBUG_INFO, "Aegis-Boot DXE Injection Module\n"));
-  DEBUG ((DEBUG_INFO, "Version: %08x\n", AEGIS_BOOT_VERSION));
+  DEBUG ((DEBUG_INFO, "Barzakh DXE Injection Module\n"));
+  DEBUG ((DEBUG_INFO, "Version: %08x\n", BARZAKH_VERSION));
   DEBUG ((DEBUG_INFO, "========================================\n"));
   DEBUG ((DEBUG_INFO, "\n"));
 
@@ -79,43 +79,43 @@ DxeInjectEntry (
   // CRITICAL: Validate kill-switches FIRST
   // This prevents execution on unauthorized hardware
   //
-  DEBUG ((DEBUG_INFO, "[Aegis] Validating security constraints...\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] Validating security constraints...\n"));
   KillSwitchResult = ValidateKillSwitches ();
 
   //
   // Initialize SPI Flash Emulator (Phase 6: LoJax-style persistence)
   //
-  DEBUG ((DEBUG_INFO, "[Aegis] Initializing SPI flash emulator...\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] Initializing SPI flash emulator...\n"));
   Status = InitializeSpiFlashEmulator (&mSpiEmulator);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_WARN, "[Aegis] SPI emulator init failed: %r\n", Status));
+    DEBUG ((DEBUG_WARN, "[Barzakh] SPI emulator init failed: %r\n", Status));
   }
 
   switch (KillSwitchResult) {
     case KillSwitchSuccess:
-      DEBUG ((DEBUG_INFO, "[Aegis] Security validation PASSED\n"));
+      DEBUG ((DEBUG_INFO, "[Barzakh] Security validation PASSED\n"));
       break;
 
     case KillSwitchUuidMismatch:
-      DEBUG ((DEBUG_ERROR, "[Aegis] KILL-SWITCH TRIGGERED: UUID Mismatch\n"));
-      DEBUG ((DEBUG_ERROR, "[Aegis] This system is not authorized for Aegis-Boot execution\n"));
+      DEBUG ((DEBUG_ERROR, "[Barzakh] KILL-SWITCH TRIGGERED: UUID Mismatch\n"));
+      DEBUG ((DEBUG_ERROR, "[Barzakh] This system is not authorized for Barzakh execution\n"));
       LogTelemetry (L"Kill-switch triggered: UUID mismatch");
       return EFI_ABORTED;
 
     case KillSwitchTpmMismatch:
-      DEBUG ((DEBUG_ERROR, "[Aegis] KILL-SWITCH TRIGGERED: TPM EK Mismatch\n"));
-      DEBUG ((DEBUG_ERROR, "[Aegis] This system is not authorized for Aegis-Boot execution\n"));
+      DEBUG ((DEBUG_ERROR, "[Barzakh] KILL-SWITCH TRIGGERED: TPM EK Mismatch\n"));
+      DEBUG ((DEBUG_ERROR, "[Barzakh] This system is not authorized for Barzakh execution\n"));
       LogTelemetry (L"Kill-switch triggered: TPM EK mismatch");
       return EFI_ABORTED;
 
     case KillSwitchExpired:
-      DEBUG ((DEBUG_ERROR, "[Aegis] KILL-SWITCH TRIGGERED: Project Expired\n"));
-      DEBUG ((DEBUG_ERROR, "[Aegis] The project expiry date has passed\n"));
+      DEBUG ((DEBUG_ERROR, "[Barzakh] KILL-SWITCH TRIGGERED: Project Expired\n"));
+      DEBUG ((DEBUG_ERROR, "[Barzakh] The project expiry date has passed\n"));
       LogTelemetry (L"Kill-switch triggered: Project expired");
       return EFI_ABORTED;
 
     default:
-      DEBUG ((DEBUG_ERROR, "[Aegis] KILL-SWITCH TRIGGERED: Validation Error\n"));
+      DEBUG ((DEBUG_ERROR, "[Barzakh] KILL-SWITCH TRIGGERED: Validation Error\n"));
       LogTelemetry (L"Kill-switch triggered: Validation error");
       return EFI_ABORTED;
   }
@@ -128,15 +128,15 @@ DxeInjectEntry (
   //
   // Install Boot Services hooks
   //
-  DEBUG ((DEBUG_INFO, "[Aegis] Installing Boot Services hooks...\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] Installing Boot Services hooks...\n"));
   Status = InstallBootServicesHooks (&mHookContext);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] Failed to install hooks: %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] Failed to install hooks: %r\n", Status));
     LogTelemetry (L"Failed to install Boot Services hooks");
     return Status;
   }
 
-  DEBUG ((DEBUG_INFO, "[Aegis] Hooks installed successfully\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] Hooks installed successfully\n"));
   LogTelemetry (L"Boot Services hooks installed");
 
   //
@@ -144,8 +144,8 @@ DxeInjectEntry (
   //
   mHookContext.InstallTime = GetPerformanceCounter ();
 
-  DEBUG ((DEBUG_INFO, "[Aegis] DXE Inject module loaded successfully\n"));
-  DEBUG ((DEBUG_INFO, "[Aegis] Monitoring Boot Services activity...\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] DXE Inject module loaded successfully\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] Monitoring Boot Services activity...\n"));
 
   return EFI_SUCCESS;
 }
@@ -170,7 +170,7 @@ InstallBootServicesHooks (
   }
 
   if (Context->HooksInstalled) {
-    DEBUG ((DEBUG_WARN, "[Aegis] Hooks already installed\n"));
+    DEBUG ((DEBUG_WARN, "[Barzakh] Hooks already installed\n"));
     return EFI_ALREADY_STARTED;
   }
 
@@ -200,24 +200,24 @@ InstallBootServicesHooks (
   //
   // Install new high-value hooks (Phase 3)
   //
-  DEBUG ((DEBUG_INFO, "[Aegis] Installing high-value target hooks...\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] Installing high-value target hooks...\n"));
   
   // LoadImage hook (bootloader manipulation)
   Status = InstallLoadImageHook ();
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_WARN, "[Aegis] LoadImage hook failed: %r\n", Status));
+    DEBUG ((DEBUG_WARN, "[Barzakh] LoadImage hook failed: %r\n", Status));
   }
 
   // StartImage hook (image execution interception)
   Status = InstallStartImageHook ();
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_WARN, "[Aegis] StartImage hook failed: %r\n", Status));
+    DEBUG ((DEBUG_WARN, "[Barzakh] StartImage hook failed: %r\n", Status));
   }
 
   // SetVariable hook (Secure Boot tampering detection)
   Status = InstallSetVariableHook ();
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_WARN, "[Aegis] SetVariable hook failed: %r\n", Status));
+    DEBUG ((DEBUG_WARN, "[Barzakh] SetVariable hook failed: %r\n", Status));
   }
 
   //
@@ -241,9 +241,9 @@ InstallBootServicesHooks (
   Context->HooksInstalled = TRUE;
   Context->HookCount      = 6;  // 3 original + 3 new hooks
 
-  DEBUG ((DEBUG_INFO, "[Aegis] Installed %d hooks successfully\n", Context->HookCount));
-  DEBUG ((DEBUG_INFO, "[Aegis]   - AllocatePool, FreePool, CreateEvent\n"));
-  DEBUG ((DEBUG_INFO, "[Aegis]   - LoadImage, StartImage, SetVariable\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] Installed %d hooks successfully\n", Context->HookCount));
+  DEBUG ((DEBUG_INFO, "[Barzakh]   - AllocatePool, FreePool, CreateEvent\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh]   - LoadImage, StartImage, SetVariable\n"));
 
   return EFI_SUCCESS;
 }
@@ -285,7 +285,7 @@ RemoveBootServicesHooks (
 
   Context->HooksInstalled = FALSE;
 
-  DEBUG ((DEBUG_INFO, "[Aegis] Hooks removed\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] Hooks removed\n"));
 
   return EFI_SUCCESS;
 }
@@ -316,7 +316,7 @@ HookedAllocatePool (
   //
   DEBUG ((
     DEBUG_VERBOSE,
-    "[Aegis Hook] AllocatePool: Type=%d, Size=%lu\n",
+    "[Barzakh Hook] AllocatePool: Type=%d, Size=%lu\n",
     PoolType,
     (UINT64)Size
     ));
@@ -329,7 +329,7 @@ HookedAllocatePool (
   if (!EFI_ERROR (Status)) {
     DEBUG ((
       DEBUG_VERBOSE,
-      "[Aegis Hook] AllocatePool: Buffer=0x%p\n",
+      "[Barzakh Hook] AllocatePool: Buffer=0x%p\n",
       *Buffer
       ));
   }
@@ -358,7 +358,7 @@ HookedFreePool (
   //
   DEBUG ((
     DEBUG_VERBOSE,
-    "[Aegis Hook] FreePool: Buffer=0x%p\n",
+    "[Barzakh Hook] FreePool: Buffer=0x%p\n",
     Buffer
     ));
 
@@ -399,7 +399,7 @@ HookedCreateEvent (
   //
   DEBUG ((
     DEBUG_VERBOSE,
-    "[Aegis Hook] CreateEvent: Type=0x%x, TPL=%lu\n",
+    "[Barzakh Hook] CreateEvent: Type=0x%x, TPL=%lu\n",
     Type,
     (UINT64)NotifyTpl
     ));
@@ -418,7 +418,7 @@ HookedCreateEvent (
   if (!EFI_ERROR (Status)) {
     DEBUG ((
       DEBUG_VERBOSE,
-      "[Aegis Hook] CreateEvent: Event=0x%p\n",
+      "[Barzakh Hook] CreateEvent: Event=0x%p\n",
       *Event
       ));
   }
@@ -447,7 +447,7 @@ LogTelemetry (
   if (!EFI_ERROR (Status)) {
     DEBUG ((
       DEBUG_INFO,
-      "[Aegis Telemetry] %04d-%02d-%02d %02d:%02d:%02d - %s\n",
+      "[Barzakh Telemetry] %04d-%02d-%02d %02d:%02d:%02d - %s\n",
       CurrentTime.Year,
       CurrentTime.Month,
       CurrentTime.Day,
@@ -457,7 +457,7 @@ LogTelemetry (
       Message
       ));
   } else {
-    DEBUG ((DEBUG_INFO, "[Aegis Telemetry] %s\n", Message));
+    DEBUG ((DEBUG_INFO, "[Barzakh Telemetry] %s\n", Message));
   }
 
   //

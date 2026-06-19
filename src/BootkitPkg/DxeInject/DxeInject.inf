@@ -4,7 +4,7 @@
 # This module demonstrates DXE phase implantation and Boot Services table
 # hooking for academic research purposes. Includes hardware-rooted kill-switches.
 #
-# Copyright (c) 2026, Aegis-Boot Research Project
+# Copyright (c) 2026, Barzakh Research Project
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 

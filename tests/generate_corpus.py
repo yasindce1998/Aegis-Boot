@@ -4,7 +4,7 @@ Synthetic Test Corpus Generator
 
 Generates benign and malicious firmware samples for testing detection accuracy.
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 

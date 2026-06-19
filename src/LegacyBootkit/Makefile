@@ -2,7 +2,7 @@
 #
 # Builds 16-bit real-mode MBR/VBR bootkit research modules using NASM.
 #
-# Copyright (c) 2026, Aegis-Boot Research Project
+# Copyright (c) 2026, Barzakh Research Project
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 
 NASM ?= nasm

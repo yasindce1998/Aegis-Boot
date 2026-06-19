@@ -1,9 +1,9 @@
 """
-Performance Benchmarks for Aegis Scanner
+Performance Benchmarks for Barzakh Scanner
 
 Uses pytest-benchmark to measure and track performance of detection operations.
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
@@ -14,9 +14,9 @@ import tempfile
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from AegisScanner.detectors.entropy_analyzer import EntropyAnalyzer
-from AegisScanner.detectors.memory_detector import MemoryDetector
-from AegisScanner.detectors.hook_detector_v2 import HookDetectorV2
+from BarzakhScanner.detectors.entropy_analyzer import EntropyAnalyzer
+from BarzakhScanner.detectors.memory_detector import MemoryDetector
+from BarzakhScanner.detectors.hook_detector_v2 import HookDetectorV2
 
 
 class TestEntropyPerformance:
@@ -107,7 +107,7 @@ class TestPCRReplayPerformance:
     
     def test_pcr_extend_single(self, benchmark):
         """Benchmark single PCR extend operation."""
-        from AegisScanner.detectors.pcr_replay import PCRReplay
+        from BarzakhScanner.detectors.pcr_replay import PCRReplay
         
         pcr_replay = PCRReplay()
         pcr_value = b'\x00' * 32
@@ -118,7 +118,7 @@ class TestPCRReplayPerformance:
     
     def test_pcr_replay_100_events(self, benchmark):
         """Benchmark PCR replay with 100 events."""
-        from AegisScanner.detectors.pcr_replay import PCRReplay
+        from BarzakhScanner.detectors.pcr_replay import PCRReplay
         
         pcr_replay = PCRReplay()
         
@@ -138,7 +138,7 @@ class TestFullScanPerformance:
     
     def test_full_scan_small_firmware(self, benchmark):
         """Benchmark full scan on small firmware (256KB)."""
-        from AegisScanner.scanner import AegisScanner
+        from BarzakhScanner.scanner import BarzakhScanner
         
         # Create synthetic firmware
         data = bytes([(i * 37) % 256 for i in range(256 * 1024)])
@@ -148,7 +148,7 @@ class TestFullScanPerformance:
             temp_path = f.name
         
         try:
-            scanner = AegisScanner()
+            scanner = BarzakhScanner()
             result = benchmark(scanner.scan, temp_path)
             assert 'findings' in result
         finally:

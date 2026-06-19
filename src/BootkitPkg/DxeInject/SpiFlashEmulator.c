@@ -4,7 +4,7 @@
   Simulates SPI flash operations to model LoJax-style firmware persistence.
   All operations are emulated in memory - no actual flash writes occur.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 

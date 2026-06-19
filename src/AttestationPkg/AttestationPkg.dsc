@@ -1,11 +1,11 @@
 ## @file
-# Aegis-Boot Attestation Package
+# Barzakh Attestation Package
 #
 # This package contains defensive TPM querying and telemetry collection
 # modules for validating Measured Boot integrity and generating detection
 # ground truth data.
 #
-# Copyright (c) 2026, Aegis-Boot Research Project
+# Copyright (c) 2026, Barzakh Research Project
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 
@@ -88,7 +88,7 @@
   GCC:*_*_*_CC_FLAGS = -DAEGIS_ATTESTATION=1
   
   # Reproducible builds
-  GCC:*_*_*_CC_FLAGS = -frandom-seed=aegis-attestation-$(SOURCE_DATE_EPOCH)
+  GCC:*_*_*_CC_FLAGS = -frandom-seed=barzakh-attestation-$(SOURCE_DATE_EPOCH)
   
   # Security hardening
   GCC:*_*_*_CC_FLAGS = -fstack-protector-strong -D_FORTIFY_SOURCE=2

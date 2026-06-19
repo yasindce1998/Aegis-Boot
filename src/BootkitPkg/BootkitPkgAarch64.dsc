@@ -1,7 +1,7 @@
 ## @file
-#  Aegis-Boot Bootkit Package - AARCH64 Platform
+#  Barzakh Bootkit Package - AARCH64 Platform
 #
-#  Copyright (c) 2026, Aegis-Boot Research Project
+#  Copyright (c) 2026, Barzakh Research Project
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 ##
@@ -35,4 +35,4 @@
   BootkitPkg/Aarch64/Aarch64DxeInject.inf
 
 [BuildOptions]
-  GCC:*_*_AARCH64_CC_FLAGS = -DAEGIS_BOOT_RESEARCH=1 -Wall -Wno-unused-parameter -Werror=implicit-function-declaration -fno-stack-protector
+  GCC:*_*_AARCH64_CC_FLAGS = -DBARZAKH_RESEARCH=1 -Wall -Wno-unused-parameter -Werror=implicit-function-declaration -fno-stack-protector

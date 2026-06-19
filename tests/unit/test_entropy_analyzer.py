@@ -1,7 +1,7 @@
 """
 Unit Tests for Entropy Analyzer
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
@@ -12,7 +12,7 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from AegisScanner.detectors.entropy_analyzer import EntropyAnalyzer, EntropyRegion
+from BarzakhScanner.detectors.entropy_analyzer import EntropyAnalyzer, EntropyRegion
 
 
 class TestEntropyAnalyzer:

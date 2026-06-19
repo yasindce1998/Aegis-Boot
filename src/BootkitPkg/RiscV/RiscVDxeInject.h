@@ -3,7 +3,7 @@
 
   RISC-V specific Boot Services table hooking using AUIPC+JALR trampolines.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -25,8 +25,8 @@
 //
 // Module identification
 //
-#define AEGIS_BOOT_SIGNATURE  SIGNATURE_32('A','E','G','S')
-#define AEGIS_BOOT_VERSION    0x00030000  // v3.0 RISC-V
+#define BARZAKH_SIGNATURE  SIGNATURE_32('A','E','G','S')
+#define BARZAKH_VERSION    0x00030000  // v3.0 RISC-V
 
 //
 // Configuration (set at build time)

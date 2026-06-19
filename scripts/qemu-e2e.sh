@@ -3,7 +3,7 @@
 # QEMU End-to-End Integration Test
 #
 # Boots OVMF with bootkit EFI drivers loaded via UEFI Shell startup.nsh,
-# extracts memory dumps and TPM PCR values, runs AegisScanner against
+# extracts memory dumps and TPM PCR values, runs BarzakhScanner against
 # the artifacts, and validates detection results.
 #
 # Usage: ./qemu-e2e.sh <path-to-bootkit-binaries-dir>
@@ -138,7 +138,7 @@ create_esp_image() {
     local startup_nsh="$BUILD_DIR/startup.nsh"
     cat > "$startup_nsh" << 'STARTUP_EOF'
 @echo -off
-echo "=== Aegis-Boot E2E Test ==="
+echo "=== Barzakh E2E Test ==="
 echo "Loading bootkit drivers..."
 
 fs0:
@@ -484,7 +484,7 @@ EOF
 }
 
 run_scanner() {
-    log_info "Running AegisScanner against memory dump..."
+    log_info "Running BarzakhScanner against memory dump..."
 
     local dump_file="$DUMPS_DIR/memory-dump.bin"
 
@@ -495,7 +495,7 @@ run_scanner() {
 
     cd "$PROJECT_ROOT"
 
-    python3 src/AegisScanner/scanner.py \
+    python3 src/BarzakhScanner/scanner.py \
         --target "$dump_file" \
         --format json || true
 
@@ -543,7 +543,7 @@ main() {
     # Export for use in synthetic dump creation
     BINARIES_DIR="$binaries_dir"
 
-    log_info "=== Aegis-Boot QEMU End-to-End Test ==="
+    log_info "=== Barzakh QEMU End-to-End Test ==="
     log_info "Binaries: $binaries_dir"
     log_info "QEMU Memory: ${QEMU_MEMORY}MB"
     log_info "Timeout: ${QEMU_TIMEOUT}s"

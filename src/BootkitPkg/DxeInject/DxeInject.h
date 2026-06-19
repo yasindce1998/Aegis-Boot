@@ -4,7 +4,7 @@
   Defines structures and functions for DXE phase implantation and
   Boot Services table hooking for academic research.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -29,8 +29,8 @@
 //
 // Module identification
 //
-#define AEGIS_BOOT_SIGNATURE  SIGNATURE_32('A','E','G','S')
-#define AEGIS_BOOT_VERSION    0x00010000
+#define BARZAKH_SIGNATURE  SIGNATURE_32('A','E','G','S')
+#define BARZAKH_VERSION    0x00010000
 
 //
 // Configuration (set at build time)

@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from unittest import TestCase
 
-from src.AegisScanner.timetravel.trace_format import (
+from src.BarzakhScanner.timetravel.trace_format import (
     EVENT_SIZE,
     EVENT_STRUCT,
     HEADER_SIZE,
@@ -26,20 +26,20 @@ from src.AegisScanner.timetravel.trace_format import (
     TraceReader,
     TraceWriter,
 )
-from src.AegisScanner.timetravel.recorder import (
+from src.BarzakhScanner.timetravel.recorder import (
     RecordingConfig,
     TraceRecorder,
 )
-from src.AegisScanner.timetravel.replayer import (
+from src.BarzakhScanner.timetravel.replayer import (
     ReplayState,
     TraceReplayer,
 )
-from src.AegisScanner.timetravel.trace_analyzer import (
+from src.BarzakhScanner.timetravel.trace_analyzer import (
     AnalysisResult,
     MemoryRegionStats,
     TraceAnalyzer,
 )
-from src.AegisScanner.timetravel.timeline import (
+from src.BarzakhScanner.timetravel.timeline import (
     Timeline,
     TimelineEvent,
     TimelineEventKind,

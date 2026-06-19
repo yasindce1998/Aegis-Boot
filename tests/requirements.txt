@@ -1,4 +1,4 @@
-# Test Requirements for Aegis-Boot Scanner
+# Test Requirements for Barzakh Scanner
 
 # Core testing framework
 pytest>=7.4.0

@@ -4,7 +4,7 @@
   Implements TPM PCR querying and Measured Boot validation for
   defensive security research.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -59,7 +59,7 @@ TpmAttestationEntry (
 
   DEBUG ((DEBUG_INFO, "\n"));
   DEBUG ((DEBUG_INFO, "========================================\n"));
-  DEBUG ((DEBUG_INFO, "Aegis-Boot TPM Attestation Module\n"));
+  DEBUG ((DEBUG_INFO, "Barzakh TPM Attestation Module\n"));
   DEBUG ((DEBUG_INFO, "Version: %08x\n", TPM_ATTESTATION_VERSION));
   DEBUG ((DEBUG_INFO, "========================================\n"));
   DEBUG ((DEBUG_INFO, "\n"));
@@ -421,7 +421,7 @@ ExportAttestationData (
   // 1. Write to a dedicated logging partition
   // 2. Export to serial port for capture
   // 3. Store in NVRAM for post-boot analysis
-  // 4. Send to AegisScanner for detection rule generation
+  // 4. Send to BarzakhScanner for detection rule generation
   //
 
   DEBUG ((DEBUG_INFO, "[Attestation] === Attestation Data Export ===\n"));

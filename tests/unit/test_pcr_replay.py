@@ -3,13 +3,13 @@ Unit Tests for PCR Replay Engine
 
 Tests the core PCR extension algorithm and event log replay functionality.
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
 import unittest
 import hashlib
-from src.AegisScanner.detectors.pcr_replay import PCRReplayEngine, HashAlgorithm
+from src.BarzakhScanner.detectors.pcr_replay import PCRReplayEngine, HashAlgorithm
 
 
 class TestPCRReplayEngine(unittest.TestCase):

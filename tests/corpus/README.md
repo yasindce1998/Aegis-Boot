@@ -1,6 +1,6 @@
-# Aegis-Boot Test Corpus
+# Barzakh Test Corpus
 
-This directory contains test samples for validating the Aegis Scanner's detection capabilities.
+This directory contains test samples for validating the Barzakh Scanner's detection capabilities.
 
 ## Directory Structure
 

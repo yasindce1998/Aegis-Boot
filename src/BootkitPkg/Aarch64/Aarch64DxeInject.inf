@@ -3,7 +3,7 @@
 #
 #  ARM64-specific Boot Services table hooking for research.
 #
-#  Copyright (c) 2026, Aegis-Boot Research Project
+#  Copyright (c) 2026, Barzakh Research Project
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 ##
@@ -45,4 +45,4 @@
   TRUE
 
 [BuildOptions]
-  GCC:*_*_AARCH64_CC_FLAGS = -DAEGIS_BOOT_RESEARCH=1 -Wall -Wno-unused-parameter
+  GCC:*_*_AARCH64_CC_FLAGS = -DBARZAKH_RESEARCH=1 -Wall -Wno-unused-parameter

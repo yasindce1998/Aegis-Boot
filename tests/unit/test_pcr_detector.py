@@ -1,7 +1,7 @@
 """
 Unit tests for PCR Detector
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
@@ -15,7 +15,7 @@ import os
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.AegisScanner.detectors.pcr_detector import PCRDetector
+from src.BarzakhScanner.detectors.pcr_detector import PCRDetector
 
 
 class TestPCRDetector:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Ground Truth Validation System for Aegis-Boot CI/CD
+Ground Truth Validation System for Barzakh CI/CD
 Validates scanner results against known bootkit modifications
 """
 

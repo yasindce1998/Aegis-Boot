@@ -5,7 +5,7 @@
   interception for research purposes. All hooks operate in research mode
   (logging only, no actual redirection).
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
@@ -35,7 +35,7 @@ ReadMsr (
   
   DEBUG ((
     DEBUG_VERBOSE,
-    "[Aegis-MSR] Read MSR 0x%x = 0x%lx\n",
+    "[Barzakh-MSR] Read MSR 0x%x = 0x%lx\n",
     Msr,
     Value
     ));
@@ -61,7 +61,7 @@ WriteMsr (
   if (RESEARCH_MODE) {
     DEBUG ((
       DEBUG_INFO,
-      "[Aegis-MSR] RESEARCH MODE: Would write MSR 0x%x = 0x%lx\n",
+      "[Barzakh-MSR] RESEARCH MODE: Would write MSR 0x%x = 0x%lx\n",
       Msr,
       Value
       ));
@@ -72,7 +72,7 @@ WriteMsr (
   
   DEBUG ((
     DEBUG_INFO,
-    "[Aegis-MSR] Wrote MSR 0x%x = 0x%lx\n",
+    "[Barzakh-MSR] Wrote MSR 0x%x = 0x%lx\n",
     Msr,
     Value
     ));
@@ -108,11 +108,11 @@ InstallMsrHooks (
   }
 
   if (Context->HooksInstalled) {
-    DEBUG ((DEBUG_WARN, "[Aegis-MSR] Hooks already installed\n"));
+    DEBUG ((DEBUG_WARN, "[Barzakh-MSR] Hooks already installed\n"));
     return EFI_ALREADY_STARTED;
   }
 
-  DEBUG ((DEBUG_INFO, "[Aegis-MSR] Installing MSR hooks...\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh-MSR] Installing MSR hooks...\n"));
 
   //
   // Read current MSR values
@@ -130,17 +130,17 @@ InstallMsrHooks (
 
   DEBUG ((
     DEBUG_INFO,
-    "[Aegis-MSR] Original IA32_LSTAR: 0x%lx\n",
+    "[Barzakh-MSR] Original IA32_LSTAR: 0x%lx\n",
     CurrentLstar
     ));
   DEBUG ((
     DEBUG_INFO,
-    "[Aegis-MSR] Original IA32_CSTAR: 0x%lx\n",
+    "[Barzakh-MSR] Original IA32_CSTAR: 0x%lx\n",
     CurrentCstar
     ));
   DEBUG ((
     DEBUG_INFO,
-    "[Aegis-MSR] Original IA32_SYSENTER_EIP: 0x%lx\n",
+    "[Barzakh-MSR] Original IA32_SYSENTER_EIP: 0x%lx\n",
     CurrentSysenterEip
     ));
 
@@ -156,7 +156,7 @@ InstallMsrHooks (
 
   DEBUG ((
     DEBUG_INFO,
-    "[Aegis-MSR] Hook handler address: 0x%lx\n",
+    "[Barzakh-MSR] Hook handler address: 0x%lx\n",
     Context->HookAddress
     ));
 
@@ -172,14 +172,14 @@ InstallMsrHooks (
 
   DEBUG ((
     DEBUG_INFO,
-    "[Aegis-MSR] Installed %d MSR hooks\n",
+    "[Barzakh-MSR] Installed %d MSR hooks\n",
     Context->HookCount
     ));
 
   //
   // Log what a real hook handler would do
   //
-  DEBUG ((DEBUG_INFO, "[Aegis-MSR] Hook handler would:\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh-MSR] Hook handler would:\n"));
   DEBUG ((DEBUG_INFO, "  1. Save all registers\n"));
   DEBUG ((DEBUG_INFO, "  2. Log syscall number and arguments\n"));
   DEBUG ((DEBUG_INFO, "  3. Optionally modify arguments\n"));
@@ -210,11 +210,11 @@ RemoveMsrHooks (
   }
 
   if (!Context->HooksInstalled) {
-    DEBUG ((DEBUG_WARN, "[Aegis-MSR] Hooks not installed\n"));
+    DEBUG ((DEBUG_WARN, "[Barzakh-MSR] Hooks not installed\n"));
     return EFI_NOT_STARTED;
   }
 
-  DEBUG ((DEBUG_INFO, "[Aegis-MSR] Removing MSR hooks...\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh-MSR] Removing MSR hooks...\n"));
 
   //
   // Restore original MSR values
@@ -225,24 +225,24 @@ RemoveMsrHooks (
 
   DEBUG ((
     DEBUG_INFO,
-    "[Aegis-MSR] Restored IA32_LSTAR to 0x%lx\n",
+    "[Barzakh-MSR] Restored IA32_LSTAR to 0x%lx\n",
     Context->OriginalLstar
     ));
   DEBUG ((
     DEBUG_INFO,
-    "[Aegis-MSR] Restored IA32_CSTAR to 0x%lx\n",
+    "[Barzakh-MSR] Restored IA32_CSTAR to 0x%lx\n",
     Context->OriginalCstar
     ));
   DEBUG ((
     DEBUG_INFO,
-    "[Aegis-MSR] Restored IA32_SYSENTER_EIP to 0x%lx\n",
+    "[Barzakh-MSR] Restored IA32_SYSENTER_EIP to 0x%lx\n",
     Context->OriginalSysenterEip
     ));
 
   Context->HooksInstalled = FALSE;
   Context->HookCount = 0;
 
-  DEBUG ((DEBUG_INFO, "[Aegis-MSR] MSR hooks removed\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh-MSR] MSR hooks removed\n"));
 
   return EFI_SUCCESS;
 }
@@ -266,7 +266,7 @@ LogMsrValues (
   UINT64  SysenterEsp;
   UINT64  SysenterEip;
 
-  DEBUG ((DEBUG_INFO, "[Aegis-MSR] Current MSR Values:\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh-MSR] Current MSR Values:\n"));
   DEBUG ((DEBUG_INFO, "================================\n"));
 
   //
@@ -297,7 +297,7 @@ LogMsrValues (
   // Check if values have been modified
   //
   if (Context != NULL && Context->HooksInstalled) {
-    DEBUG ((DEBUG_INFO, "\n[Aegis-MSR] Hook Status:\n"));
+    DEBUG ((DEBUG_INFO, "\n[Barzakh-MSR] Hook Status:\n"));
     DEBUG ((DEBUG_INFO, "================================\n"));
     DEBUG ((DEBUG_INFO, "Hooks Installed: YES\n"));
     DEBUG ((DEBUG_INFO, "Hook Count: %d\n", Context->HookCount));
@@ -360,7 +360,7 @@ DetectMsrHooks (
   if (CurrentLstar != Context->OriginalLstar) {
     DEBUG ((
       DEBUG_WARN,
-      "[Aegis-MSR] HOOK DETECTED: IA32_LSTAR modified\n"
+      "[Barzakh-MSR] HOOK DETECTED: IA32_LSTAR modified\n"
       ));
     DEBUG ((
       DEBUG_WARN,
@@ -374,7 +374,7 @@ DetectMsrHooks (
   if (CurrentCstar != Context->OriginalCstar) {
     DEBUG ((
       DEBUG_WARN,
-      "[Aegis-MSR] HOOK DETECTED: IA32_CSTAR modified\n"
+      "[Barzakh-MSR] HOOK DETECTED: IA32_CSTAR modified\n"
       ));
     DEBUG ((
       DEBUG_WARN,
@@ -388,7 +388,7 @@ DetectMsrHooks (
   if (CurrentSysenterEip != Context->OriginalSysenterEip) {
     DEBUG ((
       DEBUG_WARN,
-      "[Aegis-MSR] HOOK DETECTED: IA32_SYSENTER_EIP modified\n"
+      "[Barzakh-MSR] HOOK DETECTED: IA32_SYSENTER_EIP modified\n"
       ));
     DEBUG ((
       DEBUG_WARN,

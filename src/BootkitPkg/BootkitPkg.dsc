@@ -1,11 +1,11 @@
 ## @file
-# Aegis-Boot Bootkit Package
+# Barzakh Bootkit Package
 #
 # This package contains the UEFI bootkit emulation modules for academic
 # research purposes. All modules include hardware-rooted kill-switches
 # and are designed for defensive security research only.
 #
-# Copyright (c) 2026, Aegis-Boot Research Project
+# Copyright (c) 2026, Barzakh Research Project
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 
@@ -99,10 +99,10 @@
 
 [BuildOptions]
   # Enable security features
-  GCC:*_*_*_CC_FLAGS = -DAEGIS_BOOT_RESEARCH=1
+  GCC:*_*_*_CC_FLAGS = -DBARZAKH_RESEARCH=1
   
   # Reproducible builds
-  GCC:*_*_*_CC_FLAGS = -frandom-seed=aegis-boot-$(SOURCE_DATE_EPOCH)
+  GCC:*_*_*_CC_FLAGS = -frandom-seed=barzakh-$(SOURCE_DATE_EPOCH)
   
   # Security hardening (no stack protector — UEFI has no __stack_chk_fail runtime)
   GCC:*_*_*_CC_FLAGS = -fno-stack-protector

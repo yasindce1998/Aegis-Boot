@@ -207,7 +207,7 @@ class BootkitDebugger:
     def interactive_mode(self):
         """Enter interactive debugging mode"""
         print("\n" + "="*60)
-        print("Aegis-Boot Interactive Debugger")
+        print("Barzakh Interactive Debugger")
         print("="*60)
         print("\nCommands:")
         print("  continue (c)  - Continue execution")
@@ -265,11 +265,11 @@ class SetVariableBreakpoint(gdb.Breakpoint):
         return True
 
 # GDB Commands
-class AegisCommand(gdb.Command):
-    """Aegis-Boot debugging commands"""
+class BarzakhCommand(gdb.Command):
+    """Barzakh debugging commands"""
     
     def __init__(self, debugger: BootkitDebugger):
-        super().__init__("aegis", gdb.COMMAND_USER)
+        super().__init__("barzakh", gdb.COMMAND_USER)
         self.debugger = debugger
     
     def invoke(self, argument, from_tty):
@@ -293,17 +293,17 @@ class AegisCommand(gdb.Command):
             self.debugger.trace_msr_writes()
         else:
             print(f"Unknown command: {cmd}")
-            print("Usage: aegis [setup|hooks|bs|msr]")
+            print("Usage: barzakh [setup|hooks|bs|msr]")
 
 # Initialize debugger
 debugger = BootkitDebugger()
-AegisCommand(debugger)
+BarzakhCommand(debugger)
 
 print("\n" + "="*60)
-print("Aegis-Boot GDB Debugger Loaded")
+print("Barzakh GDB Debugger Loaded")
 print("="*60)
-print("\nType 'aegis setup' to configure breakpoints")
-print("Type 'aegis' for interactive mode")
+print("\nType 'barzakh setup' to configure breakpoints")
+print("Type 'barzakh' for interactive mode")
 print("="*60 + "\n")
 
 

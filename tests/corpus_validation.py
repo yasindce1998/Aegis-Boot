@@ -367,7 +367,7 @@ class CorpusValidator:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Validate Aegis Scanner against test corpus'
+        description='Validate Barzakh Scanner against test corpus'
     )
     parser.add_argument(
         '--corpus',
@@ -378,7 +378,7 @@ def main():
     parser.add_argument(
         '--scanner',
         type=Path,
-        default=Path('src/AegisScanner/scanner.py'),
+        default=Path('src/BarzakhScanner/scanner.py'),
         help='Path to scanner script'
     )
     parser.add_argument(

@@ -3,7 +3,7 @@ Unit tests for the Differential Firmware Diffing engine.
 
 Tests FirmwareDiffer, SemanticAnalyzer, DiffReportGenerator, and BaselineDB.
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
@@ -18,16 +18,16 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from AegisScanner.differ.fv_differ import (
+from BarzakhScanner.differ.fv_differ import (
     FirmwareDiffer, DiffResult, DiffType, FileDiff, VolumeDiff
 )
-from AegisScanner.differ.semantic_diff import (
+from BarzakhScanner.differ.semantic_diff import (
     SemanticAnalyzer, ChangeCategory, Severity, ChangeClassification,
     KNOWN_BOOTKIT_TARGET_GUIDS, KNOWN_BENIGN_GUIDS
 )
-from AegisScanner.differ.diff_report import DiffReportGenerator
-from AegisScanner.differ.baseline_db import BaselineDB
-from AegisScanner.detectors.fv_parser import FirmwareVolume, FirmwareFile
+from BarzakhScanner.differ.diff_report import DiffReportGenerator
+from BarzakhScanner.differ.baseline_db import BaselineDB
+from BarzakhScanner.detectors.fv_parser import FirmwareVolume, FirmwareFile
 
 
 # ============================================================================
@@ -758,14 +758,14 @@ class TestFirmwareDifferDetector(unittest.TestCase):
     """Test the scanner-integrated FirmwareDifferDetector."""
 
     def test_no_baseline_returns_info(self):
-        from AegisScanner.scanner import FirmwareDifferDetector
+        from BarzakhScanner.scanner import FirmwareDifferDetector
         detector = FirmwareDifferDetector(baseline_firmware=None)
         results = detector.detect('any_path.rom')
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['severity'], 'info')
 
     def test_with_baseline_detects_changes(self):
-        from AegisScanner.scanner import FirmwareDifferDetector
+        from BarzakhScanner.scanner import FirmwareDifferDetector
         tmpdir = tempfile.mkdtemp()
         try:
             vol_guid = _make_guid(1)

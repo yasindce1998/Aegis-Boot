@@ -4,7 +4,7 @@
   Implements OS kernel detection in memory during ExitBootServices.
   For academic research purposes only - does not actually modify kernel.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/

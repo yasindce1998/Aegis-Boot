@@ -4,7 +4,7 @@ Tests for the Adversarial Bootkit Generator (Phase 4).
 Validates template construction, mutation strategies, multi-architecture
 generation, and detection evaluation.
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
@@ -17,17 +17,17 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from AegisScanner.generator.templates import (
+from BarzakhScanner.generator.templates import (
     Architecture, BootkitTemplate, HookSlot, HookTarget,
     BST_FUNCTION_OFFSETS, TemplateLibrary,
 )
-from AegisScanner.generator.mutator import (
+from BarzakhScanner.generator.mutator import (
     BootkitMutator, MutationResult, MutationStrategy,
 )
-from AegisScanner.generator.generator import (
+from BarzakhScanner.generator.generator import (
     AdversarialGenerator, GenerationConfig, ARCH_STRATEGIES,
 )
-from AegisScanner.generator.evaluator import (
+from BarzakhScanner.generator.evaluator import (
     DetectionEvaluator, EvaluationReport,
 )
 

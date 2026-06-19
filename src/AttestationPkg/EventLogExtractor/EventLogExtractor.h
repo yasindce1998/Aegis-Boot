@@ -4,7 +4,7 @@
   Defines structures and functions for TCG Event Log extraction
   and analysis.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/

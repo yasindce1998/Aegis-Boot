@@ -9,7 +9,7 @@
   - IA32_CSTAR (0xC0000083): Compatibility mode syscall
   - IA32_SYSENTER_EIP (0x176): Legacy sysenter entry
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 

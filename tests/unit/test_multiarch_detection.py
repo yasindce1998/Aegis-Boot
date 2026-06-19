@@ -4,7 +4,7 @@ Unit Tests for Multi-Architecture Bootkit Detection
 Tests ARM64/RISC-V trampoline detection in hook_detector_v2.py
 and MBR/VBR detection in mbr_detector.py.
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
@@ -16,8 +16,8 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from AegisScanner.detectors.hook_detector_v2 import HookDetectorV2
-from AegisScanner.detectors.mbr_detector import MBRDetector
+from BarzakhScanner.detectors.hook_detector_v2 import HookDetectorV2
+from BarzakhScanner.detectors.mbr_detector import MBRDetector
 
 
 class TestARM64TrampolineDetection(unittest.TestCase):
@@ -178,14 +178,14 @@ class TestMBRDetector(unittest.TestCase):
             f"Expected relocation detection, got: {[f['title'] for f in results]}"
         )
 
-    def test_aegis_signature_detection(self):
+    def test_barzakh_signature_detection(self):
         """Detect AEGS signature in MBR."""
         code = b'\x90' * 100 + b'AEGS' + b'\x90' * 50
         mbr = self._build_mbr(code=code)
         target = self._make_target(mbr)
         results = self.detector.detect(target)
 
-        sig_findings = [f for f in results if 'Aegis-Boot research MBR' in f.get('title', '')]
+        sig_findings = [f for f in results if 'Barzakh research MBR' in f.get('title', '')]
         self.assertTrue(
             len(sig_findings) > 0,
             f"Expected AEGS signature finding, got: {[f['title'] for f in results]}"
@@ -198,7 +198,7 @@ class TestMBRDetector(unittest.TestCase):
         target = self._make_target(mbr)
         results = self.detector.detect(target)
 
-        sig_findings = [f for f in results if 'Aegis-Boot research VBR' in f.get('title', '')]
+        sig_findings = [f for f in results if 'Barzakh research VBR' in f.get('title', '')]
         self.assertTrue(
             len(sig_findings) > 0,
             f"Expected AEGV signature finding, got: {[f['title'] for f in results]}"

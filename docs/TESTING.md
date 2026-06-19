@@ -1,6 +1,6 @@
-# Aegis-Boot: Testing & Validation Strategy
+# Barzakh: Testing & Validation Strategy
 
-This document defines the testing methodologies, environments, and validation criteria for Project Aegis-Boot. Due to the low-level, firmware-centric nature of the project, testing is strictly controlled and heavily relies on virtualization and automation to ensure safety, reproducibility, and rigorous academic validation.
+This document defines the testing methodologies, environments, and validation criteria for Project Barzakh. Due to the low-level, firmware-centric nature of the project, testing is strictly controlled and heavily relies on virtualization and automation to ensure safety, reproducibility, and rigorous academic validation.
 
 ## 1. Test Environment Setup
 
@@ -22,7 +22,7 @@ Before any functional testing of the bootkit behavior is conducted, the kill-swi
 
 | Test Case | Description | Expected Outcome |
 | :--- | :--- | :--- |
-| **UUID Mismatch** | Launch Aegis-Boot on a QEMU instance with a non-whitelisted SMBIOS UUID. | Driver unloads gracefully (`EFI_ABORTED`). System boots normally. |
+| **UUID Mismatch** | Launch Barzakh on a QEMU instance with a non-whitelisted SMBIOS UUID. | Driver unloads gracefully (`EFI_ABORTED`). System boots normally. |
 | **vTPM EK Mismatch** | Present a vTPM with a simulated Endorsement Key different from the hardcoded lab key. | Driver unloads gracefully (`EFI_ABORTED`). System boots normally. |
 | **Expiry Validation** | Boot the environment with the RTC (Real-Time Clock) set past the hardcoded project expiry date. | Driver aborts execution. |
 | **Automated Rollback** | Trigger a corrupted NVRAM state and execute `nvram-recovery.py`. | Original OVMF NVRAM (`_VARS.fd`) is restored; system reboots successfully. |
@@ -44,14 +44,14 @@ Validating that the malware simulation successfully reproduces specific TTPs wit
 Testing the blue-team data collection capabilities of the `AttestationPkg`.
 
 ### 4.1 PCR Delta Verification
-* **Method:** Record PCR [0, 2, 4, 7] values on a "clean" OVMF boot. Inject Aegis-Boot, reboot, and record the new PCR configurations.
+* **Method:** Record PCR [0, 2, 4, 7] values on a "clean" OVMF boot. Inject Barzakh, reboot, and record the new PCR configurations.
 * **Success Criteria:** The `AttestationPkg` correctly identifies and logs the specific delta/hashes changed by the unauthorized DXE driver insertion.
 
 ### 4.2 Event Log Extraction
 * **Method:** Run the event log extractor module from the UEFI shell post-infection.
 * **Success Criteria:** The tool successfully writes the parsed TCG Event Log to the QEMU serial output or mounted FAT32 logging partition, accurately reflecting the malicious driver load events.
 
-## 5. Detection Efficacy (Aegis-Scanner Validation)
+## 5. Detection Efficacy (Barzakh-Scanner Validation)
 
 This validates the primary research outcome: improving the detection of firmware-level persistence.
 
@@ -59,8 +59,8 @@ This validates the primary research outcome: improving the detection of firmware
 * Scan the infected QEMU memory dumps and firmware images using standard, unmodified commercial AV/EDR tools (simulated via API or standalone scanners). 
 * **Target:** Confirm a near 0% detection rate of the advanced, memory-resident hooks.
 
-### 5.2 Aegis-Scanner Evaluation
-* Run `AegisScanner` against the same infected artifacts.
+### 5.2 Barzakh-Scanner Evaluation
+* Run `BarzakhScanner` against the same infected artifacts.
 * **Target Objective:** Achieve ≥85% effectiveness in detecting:
   1. Illegitimate DXE pointers.
   2. Modified `ExitBootServices` addresses.
@@ -90,7 +90,7 @@ Boot-time overhead from hooks must be quantified to ensure the emulation does no
 | **Infected Boot Time** | Time from QEMU start to OS login prompt (all hooks active) | ≤ 15% overhead vs. clean baseline | Same serial timestamp method |
 | **DXE Hook Latency** | Time delta introduced by `AllocatePool`/`CreateEvent` hooks | < 50 ms cumulative | Measured via `gBS->Stall()` calibrated timer in serial output |
 | **ExitBootServices Overhead** | Additional time in the `ExitBootServices` interception path | < 200 ms | Instrumented in the hook code itself |
-| **Scanner Execution Time** | Wall-clock time for Aegis-Scanner to analyze a full memory dump + firmware image | < 30 seconds | Timed in CI harness |
+| **Scanner Execution Time** | Wall-clock time for Barzakh-Scanner to analyze a full memory dump + firmware image | < 30 seconds | Timed in CI harness |
 
 * **Regression policy:** If any benchmark degrades by > 20% between commits, the CI pipeline flags a warning (non-blocking) and the commit is tagged for manual review.
 
@@ -128,7 +128,7 @@ All of the following must pass before a commit is merged to `main`:
 | **G-6: DXE Hook Injection** | Serial logs confirm `gBS->AllocatePool` and `gBS->CreateEvent` hooks placed | Yes | ~2 min |
 | **G-7: ExitBootServices Transition** | Payload survives in `EfiRuntimeServicesCode` memory post-OS init | Yes | ~3 min |
 | **G-8: PCR Delta Detection** | AttestationPkg detects tampered PCR [0, 2, 4, 7] values | Yes | ~2 min |
-| **G-9: Scanner Smoke Test** | Aegis-Scanner detects ≥1 injected artifact in a single infected boot | Yes | ~2 min |
+| **G-9: Scanner Smoke Test** | Barzakh-Scanner detects ≥1 injected artifact in a single infected boot | Yes | ~2 min |
 | **G-10: SBOM Generation** | SPDX SBOM is generated and valid | Yes | ~30 sec |
 
 * **Total estimated CI pipeline time:** ~15 minutes (parallelizable to ~8 min with 2 QEMU runners).

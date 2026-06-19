@@ -1,8 +1,8 @@
-# Aegis-Boot Development Container
+# Barzakh Development Container
 #
 # Provides reproducible build environment with EDK II, QEMU, and Python tools
 #
-# Copyright (c) 2026, Aegis-Boot Research Project
+# Copyright (c) 2026, Barzakh Research Project
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 
 FROM ubuntu:22.04
@@ -64,7 +64,7 @@ ENV PACKAGES_PATH=/workspace/edk2
 ENV EDK_TOOLS_PATH=/workspace/edk2/BaseTools
 
 # Create working directory
-WORKDIR /workspace/aegis-boot
+WORKDIR /workspace/barzakh
 
 # Default command
 CMD ["/bin/bash"]

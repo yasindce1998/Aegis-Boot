@@ -4,7 +4,7 @@
 # This module queries TPM Platform Configuration Registers (PCRs) and
 # validates Measured Boot integrity for defensive security research.
 #
-# Copyright (c) 2026, Aegis-Boot Research Project
+# Copyright (c) 2026, Barzakh Research Project
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Aegis-Boot Test Runner
+Barzakh Test Runner
 
-Comprehensive test runner for the Aegis-Boot project with support for
+Comprehensive test runner for the Barzakh project with support for
 unit tests, integration tests, and corpus validation.
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
@@ -43,7 +43,7 @@ def run_command(cmd: list, description: str) -> bool:
 def main():
     """Main test runner."""
     parser = argparse.ArgumentParser(
-        description='Aegis-Boot Test Runner'
+        description='Barzakh Test Runner'
     )
     
     parser.add_argument(
@@ -92,7 +92,7 @@ def main():
     start_time = datetime.now()
 
     print(f"\n{'='*60}")
-    print(f"Aegis-Boot Test Suite")
+    print(f"Barzakh Test Suite")
     print(f"{'='*60}")
     print(f"Start Time: {start_time.isoformat()}")
     print(f"{'='*60}\n")
@@ -105,7 +105,7 @@ def main():
             cmd.append('-v')
         
         if args.coverage:
-            cmd.extend(['--cov=src/AegisScanner', '--cov-report=term'])
+            cmd.extend(['--cov=src/BarzakhScanner', '--cov-report=term'])
         
         if args.html_report:
             cmd.extend(['--html=test_report.html', '--self-contained-html'])

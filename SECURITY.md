@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Aegis-Boot project is an academic research initiative focused on defensive security. This document outlines our security policies, vulnerability disclosure procedures, and incident response protocols.
+The Barzakh project is an academic research initiative focused on defensive security. This document outlines our security policies, vulnerability disclosure procedures, and incident response protocols.
 
 ## Scope
 
@@ -43,7 +43,7 @@ Multiple layers of security controls:
 
 ### Reporting a Vulnerability
 
-If you discover a security vulnerability in Aegis-Boot:
+If you discover a security vulnerability in Barzakh:
 
 #### 🚨 DO NOT:
 - Create a public GitHub issue
@@ -53,7 +53,7 @@ If you discover a security vulnerability in Aegis-Boot:
 
 #### ✅ DO:
 1. **Email**: security@deadlockcorp.edu
-2. **Subject**: "Aegis-Boot Security Vulnerability Report"
+2. **Subject**: "Barzakh Security Vulnerability Report"
 3. **Include**:
    - Detailed description of the vulnerability
    - Steps to reproduce
@@ -64,7 +64,7 @@ If you discover a security vulnerability in Aegis-Boot:
 #### 📧 Email Template
 
 ```
-Subject: Aegis-Boot Security Vulnerability Report
+Subject: Barzakh Security Vulnerability Report
 
 Vulnerability Type: [e.g., Kill-switch bypass, Privilege escalation]
 Severity: [Critical/High/Medium/Low]
@@ -132,7 +132,7 @@ We are committed to addressing security vulnerabilities promptly:
 
 ### For Novel UEFI/Firmware Vulnerabilities
 
-If your research with Aegis-Boot leads to the discovery of a novel vulnerability in UEFI implementations (Intel, AMD, Microsoft, etc.):
+If your research with Barzakh leads to the discovery of a novel vulnerability in UEFI implementations (Intel, AMD, Microsoft, etc.):
 
 #### Phase 1: Internal Triage (Days 0-7)
 
@@ -186,7 +186,7 @@ If your research with Aegis-Boot leads to the discovery of a novel vulnerability
 3. **Prepare Public Disclosure**:
    - Draft technical write-up
    - Prepare CVE request
-   - Update Aegis-Scanner detection rules
+   - Update Barzakh-Scanner detection rules
    - Document in academic paper
 
 #### Phase 4: Public Disclosure (Day 90+)
@@ -201,8 +201,8 @@ If your research with Aegis-Boot leads to the discovery of a novel vulnerability
    - CVE identifier and description
    - Technical write-up with details
    - Proof-of-concept (QEMU-only)
-   - Detection signatures for Aegis-Scanner
-   - Credit to Aegis-Boot project
+   - Detection signatures for Barzakh-Scanner
+   - Credit to Barzakh project
 
 3. **Post-Disclosure**:
    - Monitor for exploitation attempts

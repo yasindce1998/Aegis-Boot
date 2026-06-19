@@ -1,9 +1,9 @@
 """
-Integration tests for Aegis-Boot Scanner
+Integration tests for Barzakh Scanner
 
 Tests the complete scanner workflow including all detectors and report generation.
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
@@ -17,7 +17,7 @@ import os
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.AegisScanner.scanner import AegisScanner
+from src.BarzakhScanner.scanner import BarzakhScanner
 
 
 class TestScannerIntegration:
@@ -26,7 +26,7 @@ class TestScannerIntegration:
     def setup_method(self):
         """Setup test fixtures."""
         self.temp_dir = tempfile.mkdtemp()
-        self.scanner = AegisScanner()
+        self.scanner = BarzakhScanner()
 
     def teardown_method(self):
         """Cleanup test fixtures."""
@@ -66,7 +66,7 @@ class TestScannerIntegration:
         with open(baseline_file, 'w') as f:
             json.dump(baseline_data, f)
         
-        scanner = AegisScanner(baseline_path=str(baseline_file))
+        scanner = BarzakhScanner(baseline_path=str(baseline_file))
         assert scanner.baseline is not None
 
     def test_full_scan_workflow(self):
@@ -135,7 +135,7 @@ class TestScannerIntegration:
         # Verify report contains expected content
         with open(report_file, 'r', encoding='utf-8') as f:
             content = f.read()
-            assert 'Aegis-Boot Scanner Report' in content
+            assert 'Barzakh Scanner Report' in content
             assert 'summary' in content
 
     def test_report_generation_json(self):
@@ -178,7 +178,7 @@ class TestScannerIntegration:
         # Verify report contains expected content
         with open(report_file, 'r', encoding='utf-8') as f:
             content = f.read()
-            assert '# Aegis-Boot Scanner Report' in content
+            assert '# Barzakh Scanner Report' in content
             assert '## Summary' in content
 
     def test_scan_performance(self):

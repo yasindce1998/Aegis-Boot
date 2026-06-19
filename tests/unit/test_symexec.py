@@ -22,7 +22,7 @@ try:
 except ImportError:
     HAS_Z3 = False
 
-from src.AegisScanner.symexec import (
+from src.BarzakhScanner.symexec import (
     SymbolicEngine,
     EfiEnvironment,
     PathExplorer,
@@ -30,29 +30,29 @@ from src.AegisScanner.symexec import (
     BehaviorReportBuilder,
     HookAnalyzer,
 )
-from src.AegisScanner.symexec.engine import (
+from src.BarzakhScanner.symexec.engine import (
     ExecutionPath,
     ExecutionState,
     MemoryWrite,
 )
-from src.AegisScanner.symexec.efi_environment import (
+from src.BarzakhScanner.symexec.efi_environment import (
     EfiStatus,
     ServiceCall,
     ProtocolInstall,
 )
-from src.AegisScanner.symexec.path_explorer import (
+from src.BarzakhScanner.symexec.path_explorer import (
     PathCondition,
     PathSummary,
 )
-from src.AegisScanner.symexec.constraint_solver import (
+from src.BarzakhScanner.symexec.constraint_solver import (
     Constraint,
     SolverResult,
 )
-from src.AegisScanner.symexec.hook_analyzer import (
+from src.BarzakhScanner.symexec.hook_analyzer import (
     HookBehavior,
     HookChain,
 )
-from src.AegisScanner.symexec.behavior_report import (
+from src.BarzakhScanner.symexec.behavior_report import (
     BehaviorFinding,
     BehaviorReport,
 )

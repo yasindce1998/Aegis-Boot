@@ -4,7 +4,7 @@
   Implements enhanced kill-switches using TPM Endorsement Key validation
   and monotonic counter expiry for improved security and safety.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 

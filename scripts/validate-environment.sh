@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Aegis-Boot Environment Validation Script
+# Barzakh Environment Validation Script
 #
 # This script validates that all prerequisites are met before beginning
 # development or testing activities.
@@ -158,7 +158,7 @@ validate_software_dependencies() {
 validate_edk2_environment() {
     log_info "=== EDK II Environment ==="
     
-    local workspace="${WORKSPACE:-$HOME/aegis-workspace/edk2}"
+    local workspace="${WORKSPACE:-$HOME/barzakh-workspace/edk2}"
     
     # EDK II workspace
     check "EDK II workspace exists" "test -d '$workspace'"
@@ -242,7 +242,7 @@ validate_audit_logging() {
 validate_vtpm_setup() {
     log_info "=== vTPM Configuration ==="
     
-    local vtpm_dir="${VTPM_STATE_DIR:-$HOME/aegis-workspace/vtpm-state}"
+    local vtpm_dir="${VTPM_STATE_DIR:-$HOME/barzakh-workspace/vtpm-state}"
     
     check "vTPM state directory exists" "test -d '$vtpm_dir' || mkdir -p '$vtpm_dir'"
     check "vTPM state directory writable" "test -w '$vtpm_dir'"
@@ -283,7 +283,7 @@ generate_report() {
 main() {
     parse_args "$@"
     
-    echo "=== Aegis-Boot Environment Validation ==="
+    echo "=== Barzakh Environment Validation ==="
     echo
     
     validate_system_requirements

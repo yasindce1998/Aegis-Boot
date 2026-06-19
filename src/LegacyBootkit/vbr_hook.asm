@@ -6,7 +6,7 @@
 ;
 ; Build: nasm -f bin -o vbr_hook.bin vbr_hook.asm
 ;
-; Copyright (c) 2026, Aegis-Boot Research Project
+; Copyright (c) 2026, Barzakh Research Project
 ; SPDX-License-Identifier: BSD-2-Clause-Patent
 
 [BITS 16]
@@ -127,7 +127,7 @@ print_str:
 orig_int15_off: dw 0
 orig_int15_seg: dw 0
 
-aegis_vbr_sig:  db 'AEGV'      ; Scanner detection marker
+barzakh_vbr_sig:  db 'AEGV'      ; Scanner detection marker
 
 msg_err:        db 'VBR err', 0
 

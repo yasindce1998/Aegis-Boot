@@ -20,20 +20,20 @@ import pytest
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from AegisScanner.attestation.graph import (
+from BarzakhScanner.attestation.graph import (
     AttestationGraph, ComponentNode, RelationshipEdge,
     NodeType, RelationType,
 )
-from AegisScanner.attestation.signer_db import (
+from BarzakhScanner.attestation.signer_db import (
     SignerDatabase, SignerRecord, GuidRecord, VendorTrust,
 )
-from AegisScanner.attestation.provenance import (
+from BarzakhScanner.attestation.provenance import (
     ProvenanceExtractor, ProvenanceInfo, AuthenticodeInfo,
 )
-from AegisScanner.attestation.sbom_generator import (
+from BarzakhScanner.attestation.sbom_generator import (
     SBOMGenerator, SBOMFormat, SBOMMetadata,
 )
-from AegisScanner.attestation.trust_scorer import (
+from BarzakhScanner.attestation.trust_scorer import (
     TrustScorer, TrustScore, TrustLevel, TrustReport,
 )
 

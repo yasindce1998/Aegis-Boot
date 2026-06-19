@@ -4,7 +4,7 @@
   Defines hardware-rooted security mechanisms that prevent unauthorized
   execution of the bootkit emulation outside controlled research environments.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/

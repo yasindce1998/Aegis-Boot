@@ -6,9 +6,9 @@
   loaded image pages, preventing post-boot memory forensics from
   locating the DXE driver.
 
-  SIMULATION ONLY — guarded by AEGIS_BOOT_RESEARCH.
+  SIMULATION ONLY — guarded by BARZAKH_RESEARCH.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 

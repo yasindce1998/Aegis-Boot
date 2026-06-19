@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Aegis-Boot NVRAM Recovery Tool
+Barzakh NVRAM Recovery Tool
 
 This script provides automated recovery and rollback mechanisms for OVMF
 NVRAM variables. It prevents irreversible bricking of test environments
@@ -72,7 +72,7 @@ class NVRAMRecovery:
             self.workspace = Path(workspace_dir)
         else:
             home = Path.home()
-            self.workspace = home / "aegis-workspace"
+            self.workspace = home / "barzakh-workspace"
 
         # Set paths
         self.edk2_dir = self.workspace / "edk2"
@@ -294,7 +294,7 @@ class NVRAMRecovery:
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(
-        description="Aegis-Boot NVRAM Recovery Tool",
+        description="Barzakh NVRAM Recovery Tool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__
     )
@@ -331,7 +331,7 @@ def main():
 
     parser.add_argument(
         "--workspace",
-        help="Workspace directory (default: ~/aegis-workspace)"
+        help="Workspace directory (default: ~/barzakh-workspace)"
     )
 
     parser.add_argument(

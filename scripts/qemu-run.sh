@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Aegis-Boot QEMU Test Harness
+# Barzakh QEMU Test Harness
 # 
 # This script provides a safe, controlled environment for testing UEFI bootkit
 # emulation within QEMU virtualization. It enforces security constraints and
@@ -39,10 +39,10 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
 fi
 
 # Default configuration
-WORKSPACE="${WORKSPACE:-$HOME/aegis-workspace/edk2}"
+WORKSPACE="${WORKSPACE:-$HOME/barzakh-workspace/edk2}"
 OVMF_CODE="${OVMF_CODE:-$WORKSPACE/Build/OvmfX64/DEBUG_GCC5/FV/OVMF_CODE.fd}"
 OVMF_VARS="${OVMF_VARS:-$WORKSPACE/Build/OvmfX64/DEBUG_GCC5/FV/OVMF_VARS.fd}"
-VTPM_STATE_DIR="${VTPM_STATE_DIR:-$HOME/aegis-workspace/vtpm-state}"
+VTPM_STATE_DIR="${VTPM_STATE_DIR:-$HOME/barzakh-workspace/vtpm-state}"
 DISK_IMAGE="${DISK_IMAGE:-$PROJECT_ROOT/test/test-disk.qcow2}"
 
 # VM Configuration
@@ -330,7 +330,7 @@ build_qemu_command() {
 main() {
     parse_args "$@"
 
-    log_info "=== Aegis-Boot QEMU Test Harness ==="
+    log_info "=== Barzakh QEMU Test Harness ==="
     log_info "Mode: $(if [[ "$INFECTED_MODE" == "true" ]]; then echo "INFECTED"; elif [[ "$TEST_MODE" == "true" ]]; then echo "TEST"; else echo "CLEAN"; fi)"
     log_info "VM UUID: $VM_UUID"
     log_info "Memory: ${VM_MEMORY}MB"

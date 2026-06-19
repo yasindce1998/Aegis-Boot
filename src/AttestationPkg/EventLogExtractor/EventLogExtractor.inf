@@ -4,7 +4,7 @@
 # This module extracts and parses the TCG Event Log to analyze boot
 # measurements and generate detection ground truth data.
 #
-# Copyright (c) 2026, Aegis-Boot Research Project
+# Copyright (c) 2026, Barzakh Research Project
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 

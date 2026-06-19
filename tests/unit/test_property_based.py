@@ -1,10 +1,10 @@
 """
-Property-Based Tests for Aegis Scanner
+Property-Based Tests for Barzakh Scanner
 
 Uses Hypothesis for property-based testing to ensure invariants hold
 across arbitrary inputs.
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
@@ -18,8 +18,8 @@ import pytest  # type: ignore
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from AegisScanner.detectors.entropy_analyzer import EntropyAnalyzer
-from AegisScanner.detectors.pcr_replay import PCRReplayEngine
+from BarzakhScanner.detectors.entropy_analyzer import EntropyAnalyzer
+from BarzakhScanner.detectors.pcr_replay import PCRReplayEngine
 
 
 class TestEntropyProperties:
@@ -156,7 +156,7 @@ class TestDetectorRobustness:
     @settings(max_examples=100)
     def test_memory_patterns_no_crash(self, data):
         """Property: Memory pattern detection never crashes."""
-        from AegisScanner.detectors.memory_detector import MemoryDetector
+        from BarzakhScanner.detectors.memory_detector import MemoryDetector
         
         try:
             detector = MemoryDetector()

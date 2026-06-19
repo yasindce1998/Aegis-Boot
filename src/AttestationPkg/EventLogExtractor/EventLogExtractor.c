@@ -4,7 +4,7 @@
   Implements TCG Event Log extraction and parsing for defensive
   security research and detection ground truth generation.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -43,7 +43,7 @@ EventLogExtractorEntry (
 
   DEBUG ((DEBUG_INFO, "\n"));
   DEBUG ((DEBUG_INFO, "========================================\n"));
-  DEBUG ((DEBUG_INFO, "Aegis-Boot Event Log Extractor\n"));
+  DEBUG ((DEBUG_INFO, "Barzakh Event Log Extractor\n"));
   DEBUG ((DEBUG_INFO, "Version: %08x\n", EVENT_LOG_VERSION));
   DEBUG ((DEBUG_INFO, "========================================\n"));
   DEBUG ((DEBUG_INFO, "\n"));
@@ -313,7 +313,7 @@ ExportEventLogData (
   // 1. Write to a dedicated logging partition
   // 2. Export to serial port for capture
   // 3. Store in NVRAM for post-boot analysis
-  // 4. Send to AegisScanner for IoC generation
+  // 4. Send to BarzakhScanner for IoC generation
   //
 
   DEBUG ((DEBUG_INFO, "[EventLog] === Event Log Export ===\n"));

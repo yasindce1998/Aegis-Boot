@@ -4,7 +4,7 @@ Unit tests for PCR Prediction Oracle.
 Tests the full prediction pipeline: measurement policy,
 firmware measurer, platform profiles, and oracle API.
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
@@ -19,16 +19,16 @@ from unittest.mock import patch, MagicMock
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from AegisScanner.pcr_oracle.measurement_policy import (
+from BarzakhScanner.pcr_oracle.measurement_policy import (
     MeasurementPolicy, MeasurementEvent, EventType
 )
-from AegisScanner.pcr_oracle.platform_profiles import (
+from BarzakhScanner.pcr_oracle.platform_profiles import (
     PlatformProfile, get_profile, list_profiles, register_profile,
     OVMF_PROFILE, GENERIC_PROFILE
 )
-from AegisScanner.pcr_oracle.firmware_measurer import FirmwareMeasurer
-from AegisScanner.pcr_oracle.oracle import PCROracle, predict_pcrs
-from AegisScanner.detectors.pcr_replay import PCRReplayEngine, HashAlgorithm
+from BarzakhScanner.pcr_oracle.firmware_measurer import FirmwareMeasurer
+from BarzakhScanner.pcr_oracle.oracle import PCROracle, predict_pcrs
+from BarzakhScanner.detectors.pcr_replay import PCRReplayEngine, HashAlgorithm
 
 
 class TestMeasurementPolicy:

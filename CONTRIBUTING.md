@@ -1,10 +1,10 @@
-# Contributing to Aegis-Boot
+# Contributing to Barzakh
 
-Thank you for your interest in contributing to the Aegis-Boot project. This document outlines the guidelines and requirements for contributing to this academic research project.
+Thank you for your interest in contributing to the Barzakh project. This document outlines the guidelines and requirements for contributing to this academic research project.
 
 ## ⚠️ Important Notice
 
-**Aegis-Boot is a controlled academic research project with strict ethical and legal constraints.** Contributions are limited to authorized personnel who have:
+**Barzakh is a controlled academic research project with strict ethical and legal constraints.** Contributions are limited to authorized personnel who have:
 
 1. ✅ Signed institutional agreements
 2. ✅ Completed required ethics training

@@ -4,7 +4,7 @@
   Implements hardware-rooted security mechanisms that prevent unauthorized
   execution of the bootkit emulation outside controlled research environments.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -42,24 +42,24 @@ ValidateKillSwitches (
   VOID
   )
 {
-  DEBUG ((DEBUG_INFO, "[Aegis] Validating kill-switches...\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] Validating kill-switches...\n"));
 
   //
   // Check UUID binding
   //
   if (!ValidateUuid ()) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] UUID validation FAILED\n"));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] UUID validation FAILED\n"));
     return KillSwitchUuidMismatch;
   }
-  DEBUG ((DEBUG_INFO, "[Aegis] UUID validation passed\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] UUID validation passed\n"));
 
   //
   // Check TPM EK binding
   //
   if (!ValidateTpmEk ()) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] TPM EK validation FAILED\n"));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] TPM EK validation FAILED\n"));
 #ifdef AEGIS_QEMU_MODE
-    DEBUG ((DEBUG_WARN, "[Aegis] QEMU mode: Allowing execution despite TPM failure\n"));
+    DEBUG ((DEBUG_WARN, "[Barzakh] QEMU mode: Allowing execution despite TPM failure\n"));
 #else
     return KillSwitchTpmMismatch;
 #endif
@@ -69,12 +69,12 @@ ValidateKillSwitches (
   // Check expiry date
   //
   if (!ValidateExpiry ()) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] Expiry validation FAILED\n"));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] Expiry validation FAILED\n"));
     return KillSwitchExpired;
   }
-  DEBUG ((DEBUG_INFO, "[Aegis] Expiry validation passed\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] Expiry validation passed\n"));
 
-  DEBUG ((DEBUG_INFO, "[Aegis] All kill-switch validations passed\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] All kill-switch validations passed\n"));
   return KillSwitchSuccess;
 }
 
@@ -109,7 +109,7 @@ ValidateUuid (
                   (VOID **)&Smbios
                   );
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] Failed to locate SMBIOS protocol: %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] Failed to locate SMBIOS protocol: %r\n", Status));
     return FALSE;
   }
 
@@ -127,7 +127,7 @@ ValidateUuid (
                      NULL
                      );
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] Failed to get SMBIOS Type 1 table: %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] Failed to get SMBIOS Type 1 table: %r\n", Status));
     return FALSE;
   }
 
@@ -140,7 +140,7 @@ ValidateUuid (
   //
   Status = ParseUuidString (AEGIS_ALLOWED_UUID, AllowedUuidBytes);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] Failed to parse allowed UUID: %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] Failed to parse allowed UUID: %r\n", Status));
     return FALSE;
   }
 
@@ -158,19 +158,19 @@ ValidateUuid (
     CurrentUuid[10], CurrentUuid[11], CurrentUuid[12], CurrentUuid[13], CurrentUuid[14], CurrentUuid[15]
     );
 
-  DEBUG ((DEBUG_INFO, "[Aegis] Current UUID: %a\n", UuidString));
-  DEBUG ((DEBUG_INFO, "[Aegis] Allowed UUID: %a\n", AEGIS_ALLOWED_UUID));
+  DEBUG ((DEBUG_INFO, "[Barzakh] Current UUID: %a\n", UuidString));
+  DEBUG ((DEBUG_INFO, "[Barzakh] Allowed UUID: %a\n", AEGIS_ALLOWED_UUID));
 
   //
   // Compare raw 16-byte UUIDs using CompareMem (defense-in-depth)
   // This avoids string comparison issues (case sensitivity, format variations)
   //
   if (CompareMem (CurrentUuid, AllowedUuidBytes, 16) != 0) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] UUID mismatch!\n"));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] UUID mismatch!\n"));
     return FALSE;
   }
 
-  DEBUG ((DEBUG_INFO, "[Aegis] UUID validation passed\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] UUID validation passed\n"));
   return TRUE;
 }
 
@@ -195,9 +195,9 @@ ValidateTpmEk (
   //
   Status = GetTpmEkHash (EkHash, sizeof (EkHash));
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] Failed to get TPM EK: %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] Failed to get TPM EK: %r\n", Status));
 #ifdef AEGIS_QEMU_MODE
-    DEBUG ((DEBUG_WARN, "[Aegis] QEMU mode: TPM unavailable, allowing execution\n"));
+    DEBUG ((DEBUG_WARN, "[Barzakh] QEMU mode: TPM unavailable, allowing execution\n"));
     return TRUE;
 #else
     return FALSE;
@@ -214,12 +214,12 @@ ValidateTpmEk (
   // Compare EK hash against expected value
   //
   if (CompareMem (EkHash, ExpectedEkHash, sizeof (EkHash)) != 0) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] TPM EK hash mismatch\n"));
-    DEBUG ((DEBUG_ERROR, "[Aegis] This system is not authorized\n"));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] TPM EK hash mismatch\n"));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] This system is not authorized\n"));
     return FALSE;
   }
 
-  DEBUG ((DEBUG_INFO, "[Aegis] TPM EK validation passed\n"));
+  DEBUG ((DEBUG_INFO, "[Barzakh] TPM EK validation passed\n"));
   return TRUE;
 }
 
@@ -247,13 +247,13 @@ ValidateExpiry (
   //
   Status = gRT->GetTime (&CurrentTime, NULL);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] Failed to get current time: %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] Failed to get current time: %r\n", Status));
     return FALSE;
   }
 
   DEBUG ((
     DEBUG_INFO,
-    "[Aegis] Current date: %04d-%02d-%02d\n",
+    "[Barzakh] Current date: %04d-%02d-%02d\n",
     CurrentTime.Year,
     CurrentTime.Month,
     CurrentTime.Day
@@ -263,13 +263,13 @@ ValidateExpiry (
   // Parse expiry date
   //
   if (!ParseDateString (AEGIS_EXPIRY_DATE, &ExpiryYear, &ExpiryMonth, &ExpiryDay)) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] Failed to parse expiry date: %a\n", AEGIS_EXPIRY_DATE));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] Failed to parse expiry date: %a\n", AEGIS_EXPIRY_DATE));
     return FALSE;
   }
 
   DEBUG ((
     DEBUG_INFO,
-    "[Aegis] Expiry date: %04d-%02d-%02d\n",
+    "[Barzakh] Expiry date: %04d-%02d-%02d\n",
     ExpiryYear,
     ExpiryMonth,
     ExpiryDay
@@ -288,7 +288,7 @@ ValidateExpiry (
                  );
 
   if (Comparison >= 0) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] Project has expired!\n"));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] Project has expired!\n"));
     return FALSE;
   }
 
@@ -325,7 +325,7 @@ GetSmbiosUuid (
   // Validate buffer size (UUID string requires 37 bytes: 36 chars + null terminator)
   //
   if (BufferSize < 37) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] UUID buffer too small: %d < 37\n", BufferSize));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] UUID buffer too small: %d < 37\n", BufferSize));
     return EFI_BUFFER_TOO_SMALL;
   }
 
@@ -564,7 +564,7 @@ ParseDateString (
   // Validate year range
   //
   if (*Year < 2000 || *Year > 2100) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] Invalid year: %d\n", *Year));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] Invalid year: %d\n", *Year));
     return FALSE;
   }
 
@@ -572,7 +572,7 @@ ParseDateString (
   // Validate month range
   //
   if (*Month < 1 || *Month > 12) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] Invalid month: %d\n", *Month));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] Invalid month: %d\n", *Month));
     return FALSE;
   }
 
@@ -581,7 +581,7 @@ ParseDateString (
   //
   UINT8 MaxDays = GetDaysInMonth (*Month, *Year);
   if (*Day < 1 || *Day > MaxDays) {
-    DEBUG ((DEBUG_ERROR, "[Aegis] Invalid day: %d for month %d (max: %d)\n", *Day, *Month, MaxDays));
+    DEBUG ((DEBUG_ERROR, "[Barzakh] Invalid day: %d for month %d (max: %d)\n", *Day, *Month, MaxDays));
     return FALSE;
   }
 

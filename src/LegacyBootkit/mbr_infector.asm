@@ -6,7 +6,7 @@
 ;
 ; Build: nasm -f bin -o mbr_infector.bin mbr_infector.asm
 ;
-; Copyright (c) 2026, Aegis-Boot Research Project
+; Copyright (c) 2026, Barzakh Research Project
 ; SPDX-License-Identifier: BSD-2-Clause-Patent
 
 [BITS 16]
@@ -135,7 +135,7 @@ hook_installed: db 0
 read_count:     dw 0
 
 ; Signature for scanner detection
-aegis_sig:      db 'AEGS'      ; Scanner marker
+barzakh_sig:      db 'AEGS'      ; Scanner marker
 
 msg_error:      db 'Disk error', 0x0D, 0x0A, 0
 

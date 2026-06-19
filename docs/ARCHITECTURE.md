@@ -1,29 +1,29 @@
-# Aegis-Boot: Technical Architecture & Implementation Details
+# Barzakh: Technical Architecture & Implementation Details
 
-This document outlines the in-depth technical specifications, system architecture, and low-level methodologies for Project Aegis-Boot. 
+This document outlines the in-depth technical specifications, system architecture, and low-level methodologies for Project Barzakh. 
 
 ## 1. System Architecture
 
-The following sequence diagram illustrates the complete execution flow of the Aegis-Boot environment from platform initialization to OS kernel transition.
+The following sequence diagram illustrates the complete execution flow of the Barzakh environment from platform initialization to OS kernel transition.
 
 ```mermaid
 sequenceDiagram
     participant FW as Firmware (SEC/PEI)
     participant DXE as DXE Phase
-    participant Aegis as Aegis-Bootkit
+    participant Barzakh as Bootkit
     participant BDS as Boot Device Selection
     participant BL as OS Bootloader
     participant TPM as TPM 2.0 Module
     participant OS as OS Kernel
 
     FW->>DXE: Initialize hardware & drivers
-    DXE->>Aegis: Load malicious UEFI driver
-    Aegis->>DXE: Hook Boot Services Table
+    DXE->>Barzakh: Load malicious UEFI driver
+    Barzakh->>DXE: Hook Boot Services Table
     DXE->>BDS: Hand off control
     BDS->>BL: Launch signed bootloader
-    BL->>Aegis: Invoke ExitBootServices()
-    Aegis->>BL: Intercept hook to patch kernel context in memory
-    Aegis->>TPM: Defensive attestation module records telemetry
+    BL->>Barzakh: Invoke ExitBootServices()
+    Barzakh->>BL: Intercept hook to patch kernel context in memory
+    Barzakh->>TPM: Defensive attestation module records telemetry
     BL->>OS: Final transition to Ring-0 (Infection Complete)
 ```
 
@@ -58,7 +58,7 @@ To emulate advanced stealth characteristics (e.g., hiding from EDRs running in R
 * **Target:** `IA32_LSTAR` or `IA32_SYSENTER_EIP` MSRs.
 * **Mechanism:** The bootkit alters the system call handler routines, intercepting OS-level API calls before they reach the kernel, ensuring deep system introspection capabilities.
 
-> **⚠️ Scope Justification:** MSR hooking extends beyond traditional bootkit persistence into rootkit-adjacent territory. This technique is included because real-world adversaries (e.g., CosmicStrand) employ it as a post-boot stealth mechanism, and the Aegis-Scanner must be validated against it. This module is **read-only instrumentation** — it intercepts and logs system calls but does **not** modify kernel data structures, exfiltrate data, or establish persistence beyond the current boot session. This distinction keeps the implementation within the PRD's Non-Goals boundary (§3.3). If this is determined to exceed acceptable scope, the module can be disabled via the `AEGIS_DISABLE_MSR_HOOK` build flag without affecting the core DXE/ExitBootServices emulation.
+> **⚠️ Scope Justification:** MSR hooking extends beyond traditional bootkit persistence into rootkit-adjacent territory. This technique is included because real-world adversaries (e.g., CosmicStrand) employ it as a post-boot stealth mechanism, and the Barzakh-Scanner must be validated against it. This module is **read-only instrumentation** — it intercepts and logs system calls but does **not** modify kernel data structures, exfiltrate data, or establish persistence beyond the current boot session. This distinction keeps the implementation within the PRD's Non-Goals boundary (§3.3). If this is determined to exceed acceptable scope, the module can be disabled via the `BARZAKH_DISABLE_MSR_HOOK` build flag without affecting the core DXE/ExitBootServices emulation.
 
 ## 4. Defensive Attestation Module
 
@@ -72,7 +72,7 @@ This module ensures that the research acts as a "blue-team" tool, effectively lo
 ### 4.2 TCG Event Log Parsing
 * Extracts the TCG Event Log from firmware memory.
 * Analyzes `EV_EFI_BOOT_SERVICES_APPLICATION` and `EV_EFI_BOOT_SERVICES_DRIVER` entries.
-* Provides the ground truth data for the `Aegis-Scanner` rule generation.
+* Provides the ground truth data for the `Barzakh-Scanner` rule generation.
 
 ### 4.3 Telemetry & Attestation Data Flow
 
@@ -90,7 +90,7 @@ flowchart LR
     subgraph Host Analysis Environment
         D -->|Captured via\ntee/script| F[Raw Telemetry Logs]
         E -->|Mounted read-only\npost-test| F
-        F -->|Parsed & normalized| G[Aegis-Scanner\nRule Engine]
+        F -->|Parsed & normalized| G[Barzakh-Scanner\nRule Engine]
         G -->|Detection results| H[CI Report\nJSON/HTML]
         F -->|Archived| I[AES-256 Encrypted\nCold Storage]
     end
@@ -128,7 +128,7 @@ To prevent supply-chain tampering and ensure academic reproducibility:
 ## 6. Repository Layout
 
 ```text
-aegis-boot/
+barzakh/
 ├── docs/
 │   ├── SETUP.md              # Environment setup guide
 │   ├── ARCHITECTURE.md       # This file
@@ -138,7 +138,7 @@ aegis-boot/
 │   │   ├── DxeInject/        # DXE phase implantation + kill-switches
 │   │   └── ExitBootHook/     # ExitBootServices interception & MSR hooking
 │   ├── AttestationPkg/       # Defensive TPM querying & event log extractors
-│   └── AegisScanner/         # Detection engine (Python)
+│   └── BarzakhScanner/         # Detection engine (Python)
 ├── scripts/
 │   ├── build.sh              # EDK II compilation
 │   ├── qemu-run.sh           # QEMU test harness with vTPM

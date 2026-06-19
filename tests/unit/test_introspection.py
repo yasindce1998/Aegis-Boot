@@ -9,7 +9,7 @@ Tests cover:
 - Live detector heuristics
 - Introspection runner orchestration
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
@@ -22,18 +22,18 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from AegisScanner.introspection.qemu_monitor import QMPClient, QMPError
-from AegisScanner.introspection.memory_watch import (
+from BarzakhScanner.introspection.qemu_monitor import QMPClient, QMPError
+from BarzakhScanner.introspection.memory_watch import (
     MemoryWatcher, MemoryRegion, MemoryChange, ChangeType,
 )
-from AegisScanner.introspection.breakpoint_engine import (
+from BarzakhScanner.introspection.breakpoint_engine import (
     BreakpointEngine, Breakpoint, BreakpointHit, BreakpointType, GDBProtocolError,
 )
-from AegisScanner.introspection.event_stream import (
+from BarzakhScanner.introspection.event_stream import (
     EventStream, EventType, IntrospectionEvent, Severity,
 )
-from AegisScanner.introspection.live_detector import LiveDetector, LiveFinding
-from AegisScanner.introspection.introspection_runner import (
+from BarzakhScanner.introspection.live_detector import LiveDetector, LiveFinding
+from BarzakhScanner.introspection.introspection_runner import (
     IntrospectionRunner, IntrospectionConfig,
 )
 
@@ -511,8 +511,8 @@ class TestIntrospectionRunner(unittest.TestCase):
         self.assertIsNone(runner.events)
         self.assertIsNone(runner.detector)
 
-    @patch('AegisScanner.introspection.introspection_runner.QMPClient')
-    @patch('AegisScanner.introspection.introspection_runner.BreakpointEngine')
+    @patch('BarzakhScanner.introspection.introspection_runner.QMPClient')
+    @patch('BarzakhScanner.introspection.introspection_runner.BreakpointEngine')
     def test_connect_success(self, mock_gdb_cls, mock_qmp_cls):
         mock_qmp = MagicMock()
         mock_qmp_cls.return_value = mock_qmp
@@ -527,7 +527,7 @@ class TestIntrospectionRunner(unittest.TestCase):
         self.assertIsNotNone(runner.events)
         self.assertIsNotNone(runner.detector)
 
-    @patch('AegisScanner.introspection.introspection_runner.QMPClient')
+    @patch('BarzakhScanner.introspection.introspection_runner.QMPClient')
     def test_connect_failure(self, mock_qmp_cls):
         mock_qmp_cls.return_value.connect.side_effect = QMPError("Connection refused")
 
@@ -536,8 +536,8 @@ class TestIntrospectionRunner(unittest.TestCase):
 
         self.assertFalse(result)
 
-    @patch('AegisScanner.introspection.introspection_runner.QMPClient')
-    @patch('AegisScanner.introspection.introspection_runner.BreakpointEngine')
+    @patch('BarzakhScanner.introspection.introspection_runner.QMPClient')
+    @patch('BarzakhScanner.introspection.introspection_runner.BreakpointEngine')
     def test_setup_monitoring_with_bst(self, mock_gdb_cls, mock_qmp_cls):
         mock_qmp = MagicMock()
         mock_qmp_cls.return_value = mock_qmp
@@ -552,8 +552,8 @@ class TestIntrospectionRunner(unittest.TestCase):
 
         self.assertTrue(result)
 
-    @patch('AegisScanner.introspection.introspection_runner.QMPClient')
-    @patch('AegisScanner.introspection.introspection_runner.BreakpointEngine')
+    @patch('BarzakhScanner.introspection.introspection_runner.QMPClient')
+    @patch('BarzakhScanner.introspection.introspection_runner.BreakpointEngine')
     def test_poll_once(self, mock_gdb_cls, mock_qmp_cls):
         mock_qmp = MagicMock()
         mock_qmp_cls.return_value = mock_qmp
@@ -572,8 +572,8 @@ class TestIntrospectionRunner(unittest.TestCase):
         findings = runner.poll_once()
         self.assertEqual(len(findings), 0)
 
-    @patch('AegisScanner.introspection.introspection_runner.QMPClient')
-    @patch('AegisScanner.introspection.introspection_runner.BreakpointEngine')
+    @patch('BarzakhScanner.introspection.introspection_runner.QMPClient')
+    @patch('BarzakhScanner.introspection.introspection_runner.BreakpointEngine')
     def test_stop_returns_summary(self, mock_gdb_cls, mock_qmp_cls):
         mock_qmp = MagicMock()
         mock_qmp_cls.return_value = mock_qmp

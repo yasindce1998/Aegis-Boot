@@ -3,7 +3,7 @@ Unit Tests for Enhanced Hook Detector V2
 
 Tests FV-based pointer validation and trampoline pattern detection.
 
-Copyright (c) 2026, Aegis-Boot Research Project
+Copyright (c) 2026, Barzakh Research Project
 SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 
@@ -16,7 +16,7 @@ import sys
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from AegisScanner.detectors.hook_detector_v2 import HookDetectorV2, FirmwareVolume, TrampolinePattern
+from BarzakhScanner.detectors.hook_detector_v2 import HookDetectorV2, FirmwareVolume, TrampolinePattern
 
 
 class TestFirmwareVolume(unittest.TestCase):

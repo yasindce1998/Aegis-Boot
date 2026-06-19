@@ -1,5 +1,5 @@
 #!/bin/bash
-# QEMU Automation Script for Aegis-Boot CI/CD Pipeline
+# QEMU Automation Script for Barzakh CI/CD Pipeline
 # Automates: Build → Launch → Trigger → Dump → Scan → Report
 
 set -e
@@ -184,13 +184,13 @@ stop_qemu() {
 
 # Run scanner
 run_scanner() {
-    log_info "Running Aegis Scanner..."
+    log_info "Running Barzakh Scanner..."
     
     MEMORY_DUMP=$(cat "$DUMPS_DIR/latest_memory.txt")
     PCR_DUMP=$(cat "$DUMPS_DIR/latest_pcrs.txt")
     SCAN_RESULT="$RESULTS_DIR/scan-$(date +%Y%m%d-%H%M%S).json"
     
-    python3 "$PROJECT_ROOT/src/AegisScanner/scanner.py" \
+    python3 "$PROJECT_ROOT/src/BarzakhScanner/scanner.py" \
         "$MEMORY_DUMP" \
         --pcrs "$PCR_DUMP" \
         --output "$SCAN_RESULT" \
@@ -213,7 +213,7 @@ generate_report() {
     SCAN_RESULT=$(cat "$RESULTS_DIR/latest_scan.txt")
     HTML_REPORT="${SCAN_RESULT%.json}.html"
     
-    python3 "$PROJECT_ROOT/src/AegisScanner/reports/report_generator.py" \
+    python3 "$PROJECT_ROOT/src/BarzakhScanner/reports/report_generator.py" \
         "$SCAN_RESULT" \
         --format html \
         --output "$HTML_REPORT"
@@ -252,7 +252,7 @@ cleanup() {
 
 # Main execution
 main() {
-    log_info "Starting Aegis-Boot CI/CD Pipeline"
+    log_info "Starting Barzakh CI/CD Pipeline"
     
     trap cleanup EXIT
     

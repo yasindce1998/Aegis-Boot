@@ -4,7 +4,7 @@
   Implements ExitBootServices interception to maintain memory residency
   during OS transition. For academic research purposes only.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -59,7 +59,7 @@ ExitBootHookEntry (
 
   DEBUG ((DEBUG_INFO, "\n"));
   DEBUG ((DEBUG_INFO, "========================================\n"));
-  DEBUG ((DEBUG_INFO, "Aegis-Boot ExitBootServices Hook Module\n"));
+  DEBUG ((DEBUG_INFO, "Barzakh ExitBootServices Hook Module\n"));
   DEBUG ((DEBUG_INFO, "Version: %08x\n", EXIT_BOOT_HOOK_VERSION));
   DEBUG ((DEBUG_INFO, "========================================\n"));
   DEBUG ((DEBUG_INFO, "\n"));

@@ -9,7 +9,7 @@
   Seen in: LoJax (2018), MosaicRegressor (2020), ESPecter (2021),
            BlackLotus FV variant (2023)
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 

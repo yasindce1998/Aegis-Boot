@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Aegis-Boot Audit Logging System
+# Barzakh Audit Logging System
 #
 # This script provides append-only, GPG-signed audit logging for all
 # project activities. Required for forensic traceability.
@@ -122,7 +122,7 @@ init_audit_log() {
         cat > "$AUDIT_LOG_DIR/README.md" <<'EOF'
 # Audit Logs
 
-This directory contains immutable, append-only audit logs for the Aegis-Boot project.
+This directory contains immutable, append-only audit logs for the Barzakh project.
 
 ## Structure
 
@@ -323,11 +323,11 @@ export_for_review() {
 
 **Export Date:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 **Exported By:** ${USER}
-**Project:** Aegis-Boot
+**Project:** Barzakh
 
 ## Contents
 
-This export contains all audit logs for the Aegis-Boot project.
+This export contains all audit logs for the Barzakh project.
 
 ## Files
 

@@ -3,7 +3,7 @@
 
   ARM64-specific Boot Services table hooking using LDR/BR trampolines.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -28,8 +28,8 @@
 //
 // Module identification
 //
-#define AEGIS_BOOT_SIGNATURE  SIGNATURE_32('A','E','G','S')
-#define AEGIS_BOOT_VERSION    0x00020000  // v2.0 AARCH64
+#define BARZAKH_SIGNATURE  SIGNATURE_32('A','E','G','S')
+#define BARZAKH_VERSION    0x00020000  // v2.0 AARCH64
 
 //
 // Configuration (set at build time)

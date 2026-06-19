@@ -4,7 +4,7 @@
   RISC-V specific BST hooking using AUIPC+LD+JALR trampolines.
   Demonstrates RISC-V bootkit techniques for research.
 
-  Copyright (c) 2026, Aegis-Boot Research Project
+  Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -12,15 +12,15 @@
 #include "RiscVDxeInject.h"
 
 STATIC RISCV_HOOK_CONTEXT  mHookContext = {
-  .Signature       = AEGIS_BOOT_SIGNATURE,
-  .Version         = AEGIS_BOOT_VERSION,
+  .Signature       = BARZAKH_SIGNATURE,
+  .Version         = BARZAKH_VERSION,
   .HooksInstalled  = FALSE,
   .HookCount       = 0,
   .InstallTime     = 0
 };
 
-CONST CHAR8  *gAegisAllowedUuid = AEGIS_ALLOWED_UUID;
-CONST CHAR8  *gAegisExpiryDate  = AEGIS_EXPIRY_DATE;
+CONST CHAR8  *gBarzakhAllowedUuid = AEGIS_ALLOWED_UUID;
+CONST CHAR8  *gBarzakhExpiryDate  = AEGIS_EXPIRY_DATE;
 
 /**
   Validate kill-switch conditions.

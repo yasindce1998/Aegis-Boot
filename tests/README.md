@@ -1,4 +1,4 @@
-# Aegis-Boot Test Suite
+# Barzakh Test Suite
 
 Comprehensive test suite for validating bootkit detection capabilities and ensuring system integrity.
 
@@ -50,7 +50,7 @@ python -m pytest tests/unit/test_pcr_detector.py -v
 
 ### With Coverage
 ```bash
-python -m pytest tests/ --cov=src/AegisScanner --cov-report=html
+python -m pytest tests/ --cov=src/BarzakhScanner --cov-report=html
 ```
 
 ## Test Requirements
@@ -98,7 +98,7 @@ Tests are automatically run on:
 
 ```python
 import pytest
-from src.AegisScanner.detectors.pcr_detector import PCRDetector
+from src.BarzakhScanner.detectors.pcr_detector import PCRDetector
 
 class TestPCRDetector:
     def setup_method(self):
@@ -115,12 +115,12 @@ class TestPCRDetector:
 
 ```python
 import pytest
-from src.AegisScanner.scanner import AegisScanner
+from src.BarzakhScanner.scanner import BarzakhScanner
 
 class TestScannerIntegration:
     def test_full_scan(self):
         """Test complete scan workflow."""
-        scanner = AegisScanner()
+        scanner = BarzakhScanner()
         results = scanner.scan('path/to/sample')
         assert 'summary' in results
         assert 'findings' in results
@@ -168,5 +168,5 @@ When adding new features:
 
 ---
 
-Copyright (c) 2026, Aegis-Boot Research Project  
+Copyright (c) 2026, Barzakh Research Project  
 SPDX-License-Identifier: BSD-2-Clause-Patent
