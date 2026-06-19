@@ -32,6 +32,7 @@ try:
     from .detectors.mbr_detector import MBRDetector
     from .pcr_oracle.oracle import PCROracle
     from .differ import FirmwareDiffer, SemanticAnalyzer, DiffReportGenerator, BaselineDB
+    from .attestation import ProvenanceExtractor, TrustScorer, SBOMGenerator, SBOMFormat, AttestationGraph
     from .reports.report_generator import ReportGenerator
 except ImportError:
     from detectors.pcr_detector import PCRDetector
@@ -48,6 +49,7 @@ except ImportError:
     from detectors.mbr_detector import MBRDetector
     from pcr_oracle.oracle import PCROracle
     from differ import FirmwareDiffer, SemanticAnalyzer, DiffReportGenerator, BaselineDB
+    from attestation import ProvenanceExtractor, TrustScorer, SBOMGenerator, SBOMFormat, AttestationGraph
     from reports.report_generator import ReportGenerator
 
 
@@ -76,6 +78,99 @@ class FirmwareDifferDetector:
         classifications = self.analyzer.analyze(diff_result)
         report_gen = DiffReportGenerator(diff_result, classifications)
         return report_gen.get_scanner_findings()
+
+
+class AttestationDetector:
+    """Wrapper that adapts attestation modules to the scanner's detect() interface."""
+
+    def __init__(self):
+        self.extractor = ProvenanceExtractor()
+        self.scorer = TrustScorer()
+
+    def detect(self, target_path: str) -> List[Dict]:
+        findings = []
+        try:
+            graph, provenance = self.extractor.extract_from_firmware(target_path)
+        except Exception as e:
+            return [{
+                'detector': 'attestation',
+                'severity': 'error',
+                'title': f'Attestation extraction failed: {e}',
+                'description': str(e),
+                'details': {},
+            }]
+
+        report = self.scorer.score_firmware(provenance)
+
+        unsigned = graph.get_unsigned_components()
+        if unsigned:
+            findings.append({
+                'detector': 'attestation',
+                'severity': 'high',
+                'title': f'{len(unsigned)} unsigned firmware components detected',
+                'description': 'Components without Authenticode signatures cannot be verified.',
+                'details': {
+                    'unsigned_components': [
+                        {'name': n.name, 'guid': n.guid} for n in unsigned[:20]
+                    ],
+                },
+            })
+
+        unknown_vendors = graph.get_unknown_vendors()
+        if unknown_vendors:
+            findings.append({
+                'detector': 'attestation',
+                'severity': 'medium',
+                'title': f'{len(unknown_vendors)} components from unknown vendors',
+                'description': 'Components not matching any known vendor GUID database.',
+                'details': {
+                    'unknown_vendor_components': [
+                        {'name': n.name, 'guid': n.guid} for n in unknown_vendors[:20]
+                    ],
+                },
+            })
+
+        for score in report.scores:
+            if score.level.value == 'malicious':
+                findings.append({
+                    'detector': 'attestation',
+                    'severity': 'critical',
+                    'title': f'Revoked component: {score.component_name}',
+                    'description': f'GUID {score.guid} is on the revocation list.',
+                    'details': {'reasons': score.reasons},
+                })
+            elif score.level.value == 'suspicious':
+                findings.append({
+                    'detector': 'attestation',
+                    'severity': 'high',
+                    'title': f'Suspicious component: {score.component_name}',
+                    'description': f'Low trust score ({score.score:.2f})',
+                    'details': {
+                        'score': score.score,
+                        'factors': score.factors,
+                        'reasons': score.reasons,
+                    },
+                })
+
+        if not findings:
+            findings.append({
+                'detector': 'attestation',
+                'severity': 'info',
+                'title': f'Attestation complete: {report.trust_percentage:.0f}% trusted',
+                'description': (
+                    f'{report.total_components} components analyzed, '
+                    f'{report.trusted_count} trusted, '
+                    f'{report.unknown_count} unknown'
+                ),
+                'details': {
+                    'overall_score': report.overall_score,
+                    'total': report.total_components,
+                    'trusted': report.trusted_count,
+                    'unknown': report.unknown_count,
+                },
+            })
+
+        return findings
 
 
 class AegisScanner:
@@ -110,6 +205,7 @@ class AegisScanner:
             'mbr': MBRDetector(self.baseline),
             'pcr_oracle': PCROracle(),
             'firmware_differ': FirmwareDifferDetector(diff_baseline),
+            'attestation': AttestationDetector(),
         }
         self.use_enhanced_hook_detector = use_enhanced_hook_detector
         self.findings = []
@@ -337,7 +433,7 @@ def main():
             'pcr', 'memory', 'hook', 'eventlog', 'entropy',
             'secureboot', 'runtime', 'smm', 'firmware_volume',
             'spi_integrity', 'self_erasure', 'mbr', 'pcr_oracle',
-            'firmware_differ', 'adversarial',
+            'firmware_differ', 'adversarial', 'attestation',
         ],
         help='Types of scans to perform (default: all)'
     )
