@@ -33,6 +33,7 @@ try:
     from .pcr_oracle.oracle import PCROracle
     from .differ import FirmwareDiffer, SemanticAnalyzer, DiffReportGenerator, BaselineDB
     from .attestation import ProvenanceExtractor, TrustScorer, SBOMGenerator, SBOMFormat, AttestationGraph
+    from .introspection import IntrospectionRunner, IntrospectionConfig, EventStream, LiveDetector, LiveFinding
     from .reports.report_generator import ReportGenerator
 except ImportError:
     from detectors.pcr_detector import PCRDetector
@@ -50,6 +51,7 @@ except ImportError:
     from pcr_oracle.oracle import PCROracle
     from differ import FirmwareDiffer, SemanticAnalyzer, DiffReportGenerator, BaselineDB
     from attestation import ProvenanceExtractor, TrustScorer, SBOMGenerator, SBOMFormat, AttestationGraph
+    from introspection import IntrospectionRunner, IntrospectionConfig, EventStream, LiveDetector, LiveFinding
     from reports.report_generator import ReportGenerator
 
 
@@ -173,6 +175,60 @@ class AttestationDetector:
         return findings
 
 
+class IntrospectionDetector:
+    """Wrapper that adapts the live introspection engine to the scanner's detect() interface."""
+
+    def __init__(self, qmp_socket=None, qmp_host="localhost", qmp_port=4444,
+                 gdb_port=1234, poll_interval=0.5, session_timeout=30.0):
+        self._config = IntrospectionConfig(
+            qmp_socket=qmp_socket,
+            qmp_host=qmp_host,
+            qmp_port=qmp_port,
+            gdb_port=gdb_port,
+            poll_interval=poll_interval,
+            session_timeout=session_timeout,
+        )
+
+    def detect(self, target_path: str) -> List[Dict]:
+        runner = IntrospectionRunner(self._config)
+        if not runner.connect():
+            return [{
+                'detector': 'introspection',
+                'severity': 'info',
+                'title': 'Live introspection unavailable',
+                'description': 'Could not connect to QEMU (QMP/GDB). Ensure VM is running.',
+                'details': {},
+            }]
+
+        runner.setup_monitoring()
+        runner.start()
+
+        import time
+        time.sleep(self._config.session_timeout)
+
+        summary = runner.stop()
+        findings = []
+        for f in summary.get('findings', []):
+            findings.append({
+                'detector': 'introspection',
+                'severity': f.get('severity', 'medium'),
+                'title': f.get('title', 'Introspection finding'),
+                'description': f.get('description', ''),
+                'details': f.get('evidence', {}),
+            })
+
+        if not findings:
+            findings.append({
+                'detector': 'introspection',
+                'severity': 'info',
+                'title': 'Live introspection clean',
+                'description': f'No hooks or injections detected in {summary["session"]["duration_seconds"]}s session.',
+                'details': summary.get('events', {}),
+            })
+
+        return findings
+
+
 class AegisScanner:
     """Main scanner engine for bootkit detection."""
 
@@ -206,6 +262,7 @@ class AegisScanner:
             'pcr_oracle': PCROracle(),
             'firmware_differ': FirmwareDifferDetector(diff_baseline),
             'attestation': AttestationDetector(),
+            'live': IntrospectionDetector(),
         }
         self.use_enhanced_hook_detector = use_enhanced_hook_detector
         self.findings = []
@@ -433,7 +490,7 @@ def main():
             'pcr', 'memory', 'hook', 'eventlog', 'entropy',
             'secureboot', 'runtime', 'smm', 'firmware_volume',
             'spi_integrity', 'self_erasure', 'mbr', 'pcr_oracle',
-            'firmware_differ', 'adversarial', 'attestation',
+            'firmware_differ', 'adversarial', 'attestation', 'live',
         ],
         help='Types of scans to perform (default: all)'
     )
