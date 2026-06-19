@@ -79,8 +79,8 @@ typedef struct {
   EFI_ALLOCATE_POOL         OriginalAllocatePool;
   EFI_FREE_POOL             OriginalFreePool;
   EFI_CREATE_EVENT          OriginalCreateEvent;
-  EFI_LOAD_IMAGE            OriginalLoadImage;
-  EFI_START_IMAGE           OriginalStartImage;
+  EFI_IMAGE_LOAD            OriginalLoadImage;
+  EFI_IMAGE_START           OriginalStartImage;
   UINTN                     HookCount;
   UINT64                    InstallTime;
 } RISCV_HOOK_CONTEXT;
