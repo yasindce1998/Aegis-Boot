@@ -71,7 +71,8 @@ impl SmmDetector {
                 let target = u32::from_le_bytes(window[2..6].try_into().unwrap_or([0; 4])) as u64;
 
                 // If target is outside SMRAM/TSEG ranges
-                let in_smram = (SMRAM_BASE_TYPICAL..SMRAM_BASE_TYPICAL + SMRAM_SIZE_TYPICAL).contains(&target);
+                let in_smram =
+                    (SMRAM_BASE_TYPICAL..SMRAM_BASE_TYPICAL + SMRAM_SIZE_TYPICAL).contains(&target);
                 let in_tseg = target >= TSEG_BASE_TYPICAL;
 
                 if target != 0 && !in_smram && !in_tseg && target < 0x1_0000_0000 {

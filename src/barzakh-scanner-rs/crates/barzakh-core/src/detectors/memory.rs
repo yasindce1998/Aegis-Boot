@@ -39,17 +39,16 @@ impl MemoryDetector {
         let mut offset = 0;
 
         while offset + 2 <= data.len() {
-            if &data[offset..offset + 2] == PE_MAGIC
-                && offset + 0x3C + 4 <= data.len() {
-                    let pe_offset = u32::from_le_bytes(
-                        data[offset + 0x3C..offset + 0x3C + 4]
-                            .try_into()
-                            .unwrap_or([0; 4]),
-                    ) as usize;
-                    if offset + pe_offset + 4 <= data.len()
-                        && &data[offset + pe_offset..offset + pe_offset + 4] == PE_SIGNATURE
-                    {
-                        findings.push(
+            if &data[offset..offset + 2] == PE_MAGIC && offset + 0x3C + 4 <= data.len() {
+                let pe_offset = u32::from_le_bytes(
+                    data[offset + 0x3C..offset + 0x3C + 4]
+                        .try_into()
+                        .unwrap_or([0; 4]),
+                ) as usize;
+                if offset + pe_offset + 4 <= data.len()
+                    && &data[offset + pe_offset..offset + pe_offset + 4] == PE_SIGNATURE
+                {
+                    findings.push(
                             Finding::new(
                                 "memory",
                                 Severity::High,
@@ -66,8 +65,8 @@ impl MemoryDetector {
                                 "pe_offset": pe_offset,
                             })),
                         );
-                    }
                 }
+            }
             offset += 0x1000; // page-aligned scan
         }
 

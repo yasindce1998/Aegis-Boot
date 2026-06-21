@@ -354,20 +354,17 @@ impl LiveDetector {
     fn extract_trampoline_target(&self, code: &[u8], pattern: &TrampolinePattern) -> u64 {
         match pattern.prefix {
             // MOV RAX, imm64; JMP RAX
-            [0x48, 0xB8]
-                if code.len() >= 10 => {
-                    u64::from_le_bytes(code[2..10].try_into().unwrap_or([0; 8]))
-                }
+            [0x48, 0xB8] if code.len() >= 10 => {
+                u64::from_le_bytes(code[2..10].try_into().unwrap_or([0; 8]))
+            }
             // JMP [RIP+0]
-            [0xFF, 0x25, 0x00, 0x00, 0x00, 0x00]
-                if code.len() >= 14 => {
-                    u64::from_le_bytes(code[6..14].try_into().unwrap_or([0; 8]))
-                }
+            [0xFF, 0x25, 0x00, 0x00, 0x00, 0x00] if code.len() >= 14 => {
+                u64::from_le_bytes(code[6..14].try_into().unwrap_or([0; 8]))
+            }
             // PUSH imm32; RET
-            [0x68]
-                if code.len() >= 5 => {
-                    u32::from_le_bytes(code[1..5].try_into().unwrap_or([0; 4])) as u64
-                }
+            [0x68] if code.len() >= 5 => {
+                u32::from_le_bytes(code[1..5].try_into().unwrap_or([0; 4])) as u64
+            }
             _ => 0,
         }
     }
