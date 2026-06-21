@@ -204,41 +204,6 @@ jobs:
           name: legacy-bootkit-binaries
           path: build/legacy/*.bin
 
-  test-scanner-python:
-    name: Test Detection Scanner (Python - Legacy)
-    runs-on: ubuntu-24.04
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-      
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-      
-      - name: Install Dependencies
-        run: |
-          pip install -r tests/requirements.txt
-          pip install pytest pytest-cov
-      
-      - name: Run Unit Tests
-        run: |
-          pytest tests/unit/ -v --cov=src/BarzakhScanner --cov-report=xml
-      
-      - name: Run Integration Tests
-        run: |
-          pytest tests/integration/ -v
-      
-      - name: Upload Coverage
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage.xml
-          flags: scanner
-          name: scanner-coverage
-          token: ${{ secrets.CODECOV_TOKEN }}
-
   build-scanner-rs:
     name: Build Rust Scanner
     runs-on: ubuntu-24.04
@@ -313,23 +278,24 @@ jobs:
   qemu-e2e:
     name: QEMU End-to-End Test
     runs-on: ubuntu-24.04
-    needs: build-bootkit
+    needs: [build-bootkit, build-scanner-rs]
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
+          workspaces: src/barzakh-scanner-rs
 
       - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y qemu-system-x86 ovmf mtools swtpm socat tpm2-tools
-          pip install -r tests/requirements.txt
 
       - name: Download Bootkit Artifacts
         uses: actions/download-artifact@v4
@@ -352,95 +318,6 @@ jobs:
             build/e2e/dumps/pcrs.json
             build/e2e/dumps/serial.log
             build/e2e/dumps/scan_results.json
-
-  adversarial-test:
-    name: Adversarial Generator Test
-    runs-on: ubuntu-24.04
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-
-      - name: Install Dependencies
-        run: |
-          pip install -r tests/requirements.txt
-          pip install pytest
-
-      - name: Run Adversarial Generator Tests
-        run: |
-          pytest tests/unit/test_adversarial_generator.py -v
-
-      - name: Generate and Evaluate Corpus
-        run: |
-          python -c "
-          import sys, json
-          sys.path.insert(0, 'src')
-          from BarzakhScanner.generator import AdversarialGenerator, DetectionEvaluator
-          from BarzakhScanner.generator.generator import GenerationConfig
-          from BarzakhScanner.generator.templates import Architecture
-          from pathlib import Path
-
-          gen = AdversarialGenerator(seed=42)
-          config = GenerationConfig(count=50, difficulty=4, output_dir=Path('generated_corpus'))
-          paths = gen.generate(config)
-          print(f'Generated {len(paths)} samples')
-
-          evaluator = DetectionEvaluator()
-          report = evaluator.evaluate(gen.get_results())
-          print(f'Detection rate: {report.detection_rate:.2%}')
-          print(f'Detected: {report.total_detected}/{report.total_samples}')
-
-          report.save(Path('adversarial_report.json'))
-
-          # Assert minimum detection rate
-          assert report.detection_rate >= 0.70, f'Detection rate {report.detection_rate:.2%} below 70% threshold'
-          print('PASS: Detection rate meets threshold')
-          "
-
-      - name: Upload Adversarial Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: adversarial-report
-          path: adversarial_report.json
-
-  security-audit:
-    name: Security Audit
-    runs-on: ubuntu-24.04
-    
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-      
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-      
-      - name: Run Bandit (Python Security)
-        run: |
-          pip install bandit
-          bandit -r src/BarzakhScanner/ -f json -o bandit-report.json || true
-      
-      - name: Run Safety (Dependency Check)
-        run: |
-          pip install safety
-          safety check --json > safety-report.json || true
-      
-      - name: Upload Security Reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-reports
-          path: |
-            bandit-report.json
-            safety-report.json
 
   documentation:
     name: Build Documentation
@@ -514,5 +391,3 @@ jobs:
         with:
           name: release-package
           path: barzakh-release.tar.gz
-
-

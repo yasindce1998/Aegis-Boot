@@ -51,10 +51,10 @@ Barzakh safely models Tactics, Techniques, and Procedures (TTPs) from known in-t
    - TCG Event Log extraction
    - Ground truth data generation
 
-3. **BarzakhScanner** (Detection Engine)
-   - Bootkit artifact detection
-   - Target: ≥85% TPR, <5% FPR
-   - ROC-AUC ≥0.92
+3. **Barzakh Scanner** (Detection Engine — Rust)
+   - 18 specialized detectors for bootkit artifact detection
+   - Target: ≥85% TPR, <5% FPR, ROC-AUC ≥0.92
+   - See [`src/barzakh-scanner-rs/README.md`](src/barzakh-scanner-rs/README.md)
 
 ## 🔒 Security Safeguards
 
@@ -76,7 +76,7 @@ Barzakh safely models Tactics, Techniques, and Procedures (TTPs) from known in-t
 | Component | Technology |
 |-----------|-----------|
 | Development Kit | EDK II (UEFI Development Kit) |
-| Languages | C11 (EDK II), Python 3 |
+| Languages | C11 (EDK II), Rust (Scanner) |
 | Virtualization | QEMU + KVM + OVMF |
 | Security Module | TPM 2.0 (swtpm) |
 | Guest OS | Windows 10/11, Ubuntu Linux |
@@ -96,10 +96,9 @@ barzakh/
 │   ├── AttestationPkg/             # TPM attestation & telemetry
 │   │   ├── TpmAttestation/         # PCR monitoring
 │   │   └── EventLogExtractor/      # TCG event log parsing
-│   └── BarzakhScanner/               # Detection engine (Python)
-│       ├── scanner.py              # Main scanner
-│       ├── detectors/              # Detection modules
-│       └── reports/                # Report generation
+│   └── barzakh-scanner-rs/           # Detection engine (Rust)
+│       ├── crates/barzakh-core/    # Library: 18 detectors + reports
+│       └── crates/barzakh-cli/     # CLI binary
 ├── scripts/
 │   ├── build.sh                    # EDK II compilation
 │   ├── qemu-run.sh                 # QEMU test harness with vTPM
@@ -129,7 +128,7 @@ barzakh/
    - QEMU 7.0+ with KVM support
    - EDK II development environment
    - swtpm (software TPM emulator)
-   - Python 3.10+
+   - Rust toolchain (stable)
    - GCC 11+ or Clang 14+
 
 ### Environment Setup
@@ -189,29 +188,34 @@ barzakh/
 # - NVRAM snapshots
 ```
 
-### Using BarzakhScanner
+### Using Barzakh Scanner
 ```bash
+# Build the scanner
+cd src/barzakh-scanner-rs
+cargo build --release
+
 # Scan a firmware/memory dump
-cd src/BarzakhScanner
-python scanner.py --target /path/to/firmware.bin --report --output report.html
+./target/release/barzakh-cli --target /path/to/firmware.bin --report --format html --output report.html
 
 # With baseline comparison
-python scanner.py --target firmware.bin --baseline baseline.json --report
+./target/release/barzakh-cli --target firmware.bin --baseline baseline.json --report
 
-# Validate against test corpus
-python scanner.py --validate --corpus /path/to/corpus
+# Run specific detectors
+./target/release/barzakh-cli --target firmware.bin --scan-types pcr,memory,hook
 ```
 
 ### Running Tests
 ```bash
-# Run all tests
-cd tests
-python run_tests.py --coverage
+# Run scanner tests
+cd src/barzakh-scanner-rs
+cargo test
 
-# Run specific test suites
-python run_tests.py --unit          # Unit tests only
-python run_tests.py --integration   # Integration tests only
-python run_tests.py --corpus        # Corpus validation
+# Check formatting & lint
+cargo fmt --check
+cargo clippy -- -D warnings
+
+# Security audit
+cargo audit
 ```
 
 ## 📊 Detection Targets
@@ -228,7 +232,7 @@ python run_tests.py --corpus        # Corpus validation
 - [`docs/SETUP.md`](docs/SETUP.md) - Environment setup instructions
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) - System architecture
 - [`docs/TESTING.md`](docs/TESTING.md) - Testing strategy
-- [`src/BarzakhScanner/README.md`](src/BarzakhScanner/README.md) - Scanner documentation
+- [`src/barzakh-scanner-rs/README.md`](src/barzakh-scanner-rs/README.md) - Scanner documentation
 - [`tests/README.md`](tests/README.md) - Test suite guide
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) - Contribution guidelines
 - [`SECURITY.md`](SECURITY.md) - Security policy

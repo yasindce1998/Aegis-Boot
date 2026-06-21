@@ -3,7 +3,7 @@
 # QEMU End-to-End Integration Test
 #
 # Boots OVMF with bootkit EFI drivers loaded via UEFI Shell startup.nsh,
-# extracts memory dumps and TPM PCR values, runs BarzakhScanner against
+# extracts memory dumps and TPM PCR values, runs barzakh-cli against
 # the artifacts, and validates detection results.
 #
 # Usage: ./qemu-e2e.sh <path-to-bootkit-binaries-dir>
@@ -484,20 +484,28 @@ EOF
 }
 
 run_scanner() {
-    log_info "Running BarzakhScanner against memory dump..."
+    log_info "Running barzakh-cli against memory dump..."
 
     local dump_file="$DUMPS_DIR/memory-dump.bin"
+    local scanner_bin="$PROJECT_ROOT/src/barzakh-scanner-rs/target/release/barzakh-cli"
 
     if [[ ! -f "$dump_file" ]]; then
         log_error "Memory dump not found: $dump_file"
         return 1
     fi
 
+    if [[ ! -f "$scanner_bin" ]]; then
+        log_info "Building barzakh-cli..."
+        cd "$PROJECT_ROOT/src/barzakh-scanner-rs"
+        cargo build --release
+    fi
+
     cd "$PROJECT_ROOT"
 
-    python3 src/BarzakhScanner/scanner.py \
+    "$scanner_bin" \
         --target "$dump_file" \
-        --format json || true
+        --format json \
+        --output scan_results.json || true
 
     if [[ -f "scan_results.json" ]]; then
         cp scan_results.json "$DUMPS_DIR/scan_results.json"
