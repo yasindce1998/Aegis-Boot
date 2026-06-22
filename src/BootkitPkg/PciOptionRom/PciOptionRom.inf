@@ -1,0 +1,38 @@
+## @file
+# PCI Option ROM Persistence Emulation Module
+#
+# Emulates PCI expansion ROM persistence techniques. Models option ROM
+# header construction (0xAA55 + PCIR), EFI-compatible ROM format, PCI
+# config space scanning, and Expansion ROM BAR manipulation.
+#
+# Copyright (c) 2026, Barzakh Research Project
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = PciOptionRom
+  FILE_GUID                      = A1B2C3D4-1111-2222-3333-444455556606
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = PciOptionRomEntry
+
+[Sources]
+  PciOptionRom.c
+  PciOptionRom.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  DebugLib
+  PrintLib
+  PciLib
+
+[Depex]
+  TRUE

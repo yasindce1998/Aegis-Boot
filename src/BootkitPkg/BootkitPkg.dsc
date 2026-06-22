@@ -97,6 +97,16 @@
   #
   BootkitPkg/ExitBootHook/ExitBootHook.inf
 
+  #
+  # Adversarial Firmware Emulation Modules
+  #
+  BootkitPkg/SmmPersistence/SmmPersistence.inf
+  BootkitPkg/SpiChipsetEmulator/SpiChipsetEmulator.inf
+  BootkitPkg/CapsuleHijack/CapsuleHijack.inf
+  BootkitPkg/AcpiTableInject/AcpiTableInject.inf
+  BootkitPkg/VirtualAddressMapHook/VirtualAddressMapHook.inf
+  BootkitPkg/PciOptionRom/PciOptionRom.inf
+
 [BuildOptions]
   # Enable security features
   GCC:*_*_*_CC_FLAGS = -DBARZAKH_RESEARCH=1

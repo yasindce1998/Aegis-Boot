@@ -1,0 +1,42 @@
+## @file
+# Capsule Update Hijack Emulation Module
+#
+# Emulates firmware update protocol abuse via EFI_FIRMWARE_MANAGEMENT_PROTOCOL
+# for academic research. Models capsule construction, image enumeration, and
+# malicious SetImage/UpdateCapsule injection techniques.
+#
+# Copyright (c) 2026, Barzakh Research Project
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = CapsuleHijack
+  FILE_GUID                      = A1B2C3D4-1111-2222-3333-444455556603
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = CapsuleHijackEntry
+
+[Sources]
+  CapsuleHijack.c
+  CapsuleHijack.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  UefiRuntimeServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  DebugLib
+  PrintLib
+
+[Protocols]
+  gEfiFirmwareManagementProtocolGuid             ## CONSUMES
+
+[Depex]
+  TRUE

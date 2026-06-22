@@ -1,0 +1,40 @@
+## @file
+# ACPI Table Injection Emulation Module
+#
+# Emulates malicious SSDT injection with AML bytecode for kernel memory
+# access. Models EFI_ACPI_TABLE_PROTOCOL usage, custom SSDT construction,
+# and OperationRegion(SystemMemory) payloads.
+#
+# Copyright (c) 2026, Barzakh Research Project
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = AcpiTableInject
+  FILE_GUID                      = A1B2C3D4-1111-2222-3333-444455556604
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = AcpiTableInjectEntry
+
+[Sources]
+  AcpiTableInject.c
+  AcpiTableInject.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  DebugLib
+  PrintLib
+
+[Guids]
+  gEfiAcpi20TableGuid                            ## CONSUMES
+
+[Depex]
+  TRUE

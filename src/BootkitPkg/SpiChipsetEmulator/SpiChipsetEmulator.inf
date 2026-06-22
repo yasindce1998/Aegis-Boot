@@ -1,0 +1,39 @@
+## @file
+# SPI Chipset Register Emulation Module
+#
+# Emulates chipset-level SPI flash register manipulation for academic
+# research. Models BIOS_CNTL register toggling, HSFS/HSFC hardware
+# sequencing, and TOCTOU race conditions (LoJax technique).
+#
+# Copyright (c) 2026, Barzakh Research Project
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = SpiChipsetEmulator
+  FILE_GUID                      = A1B2C3D4-1111-2222-3333-444455556602
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = SpiChipsetEmulatorEntry
+
+[Sources]
+  SpiChipsetEmulator.c
+  SpiChipsetEmulator.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  DebugLib
+  PrintLib
+  IoLib
+  PciLib
+
+[Depex]
+  TRUE
