@@ -1,0 +1,77 @@
+use anyhow::Result;
+use byteorder::{LittleEndian, WriteBytesExt};
+
+use crate::{Arch, ExpectedFinding, Payload, PayloadConfig};
+use barzakh_core::Severity;
+
+pub struct TrampolinePayload;
+
+impl Payload for TrampolinePayload {
+    fn name(&self) -> &str {
+        "trampoline"
+    }
+
+    fn arch(&self) -> Arch {
+        Arch::X86_64
+    }
+
+    fn generate(&self, config: &PayloadConfig) -> Result<Vec<u8>> {
+        let size = config.size.max(0x1000);
+        let mut data = vec![0u8; size];
+
+        match config.arch {
+            Arch::X86_64 => {
+                // JMP [RIP+0] trampoline at offset 0x100
+                let offset = 0x100;
+                data[offset] = 0xFF;
+                data[offset + 1] = 0x25;
+                data[offset + 2] = 0x00;
+                data[offset + 3] = 0x00;
+                data[offset + 4] = 0x00;
+                data[offset + 5] = 0x00;
+                // 8-byte target address (must be non-zero, non-MAX)
+                let target: u64 = 0xDEAD_BEEF_CAFE_0000;
+                let mut cursor = std::io::Cursor::new(&mut data[offset + 6..offset + 14]);
+                cursor.write_u64::<LittleEndian>(target)?;
+
+                // Second trampoline at different offset
+                let offset2 = 0x200;
+                data[offset2] = 0xFF;
+                data[offset2 + 1] = 0x25;
+                data[offset2 + 2] = 0x00;
+                data[offset2 + 3] = 0x00;
+                data[offset2 + 4] = 0x00;
+                data[offset2 + 5] = 0x00;
+                let target2: u64 = 0x0000_FFFF_8000_1000;
+                let mut cursor2 = std::io::Cursor::new(&mut data[offset2 + 6..offset2 + 14]);
+                cursor2.write_u64::<LittleEndian>(target2)?;
+            }
+            Arch::Aarch64 => {
+                // LDR X16, [PC, #8]; BR X16
+                let offset = 0x100;
+                let arm64_trampoline: [u8; 8] = [0x50, 0x00, 0x00, 0x58, 0x00, 0x02, 0x1F, 0xD6];
+                data[offset..offset + 8].copy_from_slice(&arm64_trampoline);
+                // 8-byte target address follows
+                let target: u64 = 0xFFFF_0000_0800_0000;
+                let mut cursor = std::io::Cursor::new(&mut data[offset + 8..offset + 16]);
+                cursor.write_u64::<LittleEndian>(target)?;
+
+                // Second ARM64 trampoline
+                let offset2 = 0x280;
+                data[offset2..offset2 + 8].copy_from_slice(&arm64_trampoline);
+                let target2: u64 = 0xFFFF_0000_0900_0000;
+                let mut cursor2 = std::io::Cursor::new(&mut data[offset2 + 8..offset2 + 16]);
+                cursor2.write_u64::<LittleEndian>(target2)?;
+            }
+        }
+
+        Ok(data)
+    }
+
+    fn expected_detections(&self) -> Vec<ExpectedFinding> {
+        vec![ExpectedFinding {
+            detector: "memory".to_string(),
+            min_severity: Severity::High,
+        }]
+    }
+}

