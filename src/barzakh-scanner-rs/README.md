@@ -34,26 +34,26 @@ Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to
 cd src/barzakh-scanner-rs
 cargo build --release
 
-# Binary output at target/release/barzakh-cli
+# Binary output at target/release/barzakh-scanner
 ```
 
 ## Usage
 
 ```bash
 # Scan a firmware image
-barzakh-cli --target firmware.bin
+barzakh-scanner --target firmware.bin
 
 # Scan with baseline comparison
-barzakh-cli --target firmware.bin --baseline baseline.json
+barzakh-scanner --target firmware.bin --baseline baseline.json
 
 # Generate HTML report
-barzakh-cli --target firmware.bin --report --format html --output report.html
+barzakh-scanner --target firmware.bin --report --format html --output report.html
 
 # Run specific detectors only
-barzakh-cli --target dump.bin --scan-types pcr,memory,hook
+barzakh-scanner --target dump.bin --scan-types pcr,memory,hook
 
 # Validate against test corpus
-barzakh-cli --target firmware.bin --validate --corpus test-data/
+barzakh-scanner --target firmware.bin --validate --corpus test-data/
 ```
 
 ## Architecture
@@ -72,7 +72,7 @@ barzakh-scanner-rs/
     │   │   └── reports/          # HTML/JSON/Markdown reports
     │   └── tests/
     │       └── scanner_integration.rs
-    └── barzakh-cli/              # Binary crate
+    └── barzakh-cli/              # Binary crate (produces `barzakh-scanner`)
         └── src/main.rs           # CLI interface (clap)
 ```
 

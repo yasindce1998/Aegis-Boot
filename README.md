@@ -98,7 +98,7 @@ barzakh/
 │   │   └── EventLogExtractor/      # TCG event log parsing
 │   └── barzakh-scanner-rs/           # Detection engine (Rust)
 │       ├── crates/barzakh-core/    # Library: 18 detectors + reports
-│       └── crates/barzakh-cli/     # CLI binary
+│       └── crates/barzakh-scanner/     # CLI binary
 ├── scripts/
 │   ├── build.sh                    # EDK II compilation
 │   ├── qemu-run.sh                 # QEMU test harness with vTPM
@@ -195,13 +195,13 @@ cd src/barzakh-scanner-rs
 cargo build --release
 
 # Scan a firmware/memory dump
-./target/release/barzakh-cli --target /path/to/firmware.bin --report --format html --output report.html
+./target/release/barzakh-scanner --target /path/to/firmware.bin --report --format html --output report.html
 
 # With baseline comparison
-./target/release/barzakh-cli --target firmware.bin --baseline baseline.json --report
+./target/release/barzakh-scanner --target firmware.bin --baseline baseline.json --report
 
 # Run specific detectors
-./target/release/barzakh-cli --target firmware.bin --scan-types pcr,memory,hook
+./target/release/barzakh-scanner --target firmware.bin --scan-types pcr,memory,hook
 ```
 
 ### Running Tests

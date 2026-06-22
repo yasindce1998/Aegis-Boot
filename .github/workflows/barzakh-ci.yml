@@ -228,7 +228,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: barzakh-scanner-rs
-          path: src/barzakh-scanner-rs/target/release/barzakh-cli
+          path: src/barzakh-scanner-rs/target/release/barzakh-scanner
 
   test-scanner-rs:
     name: Test Rust Scanner
