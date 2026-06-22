@@ -62,7 +62,7 @@ barzakh-scanner --target firmware.bin --validate --corpus test-data/
 barzakh-scanner-rs/
 ├── Cargo.toml                    # Workspace root
 └── crates/
-    ├── barzakh-core/             # Library crate
+    ├── barzakh-core/             # Library crate (detection engine)
     │   ├── src/
     │   │   ├── lib.rs            # Public API
     │   │   ├── scanner.rs        # Scan orchestration
@@ -72,8 +72,17 @@ barzakh-scanner-rs/
     │   │   └── reports/          # HTML/JSON/Markdown reports
     │   └── tests/
     │       └── scanner_integration.rs
-    └── barzakh-cli/              # Binary crate (produces `barzakh-scanner`)
-        └── src/main.rs           # CLI interface (clap)
+    ├── barzakh-cli/              # Binary crate (produces `barzakh-scanner`)
+    │   └── src/main.rs           # CLI interface (clap)
+    └── barzakh-adversary/        # Red-team payload generator
+        ├── src/
+        │   ├── lib.rs            # Payload trait + public API
+        │   ├── payloads/         # 5 payload generators
+        │   ├── validate/         # Scanner invocation + result comparison
+        │   ├── corpus.rs         # Malicious/clean pair generator
+        │   └── deploy/           # ESP image builder + QEMU orchestration (WIP)
+        └── tests/
+            └── integration.rs    # Generate → scan → assert detection
 ```
 
 ## Detection Metrics
@@ -103,10 +112,11 @@ cargo audit
 
 ## CI/CD
 
-The scanner is gated by three CI jobs on every push:
+The workspace is gated by four CI jobs on every push:
 
 - **Build Rust Scanner** — release build verification
 - **Test Rust Scanner** — fmt + clippy + full test suite
+- **Adversary Red-Team Tests** — payload generation + scanner detection validation + corpus E2E
 - **Security Audit (Rust)** — dependency vulnerability scan via `cargo-audit`
 
 ## License

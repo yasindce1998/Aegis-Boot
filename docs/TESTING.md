@@ -107,7 +107,49 @@ The original 50-boot FPR sample is insufficient for statistical confidence. The 
 * **Reporting:** FPR results are reported with exact binomial confidence intervals, not point estimates alone.
 * **Automation:** The 200-boot suite runs nightly via `scripts/fpr-validation.sh` and results are appended to a rolling CSV for trend analysis.
 
-## 8. Automation & CI/CD
+## 8. Adversary Red-Team Testing (Automated)
+
+The `barzakh-adversary` crate provides automated, closed-loop validation of the scanner's detection capabilities.
+
+### 8.1 Payload-Level Validation
+
+Each payload generator declares its expected detections. The validation runner:
+1. Generates the binary payload via `Payload::generate()`
+2. Writes it to a temporary file
+3. Invokes `BarzakhScanner::scan()` on that file
+4. Compares actual findings against `expected_detections()`
+5. Reports: detected (bool), matched findings count, severity levels
+
+```bash
+# Run all adversary unit tests (each payload individually validated)
+cargo test -p barzakh-adversary
+
+# Run corpus-level E2E (generates all payloads + clean pairs, measures TPR/FPR)
+cargo test -p barzakh-adversary -- --ignored corpus_validation
+```
+
+### 8.2 Corpus Validation
+
+The corpus generator produces paired files (`malicious_*.bin` + `clean_*.bin`) for all payloads. The scanner's `validate_against_corpus()` uses filename conventions to establish ground truth:
+- Files containing "malicious" or "infected" → expected positive
+- All others → expected negative
+
+**Thresholds enforced in CI:**
+- True Positive Rate (TPR) >= 80%
+- False Positive Rate (FPR) <= 10%
+
+### 8.3 Current Payload Coverage
+
+| Payload | Detection Path | Status |
+| :--- | :--- | :--- |
+| Trampoline (x86_64) | `FF 25` indirect JMP pattern | Passing |
+| Trampoline (ARM64) | `LDR X16 + BR X16` pattern | Passing |
+| Boot Services Hook | CRC32 mismatch + pointer range | Passing |
+| PE Injection | MZ + PE\0\0 at page-aligned offset | Passing |
+| FV Tamper | `_FVH` header checksum corruption | Passing |
+| Signature Plant | Aho-Corasick match (BlackLotus, CosmicStrand, MoonBounce) | Passing |
+
+## 9. Automation & CI/CD
 
 To ensure continuous integrity during the development lifecycle:
 * **Script:** `scripts/build.sh` automatically compiles the EDK II packages.

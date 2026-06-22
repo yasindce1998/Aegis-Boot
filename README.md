@@ -40,11 +40,12 @@ Barzakh safely models Tactics, Techniques, and Procedures (TTPs) from known in-t
 
 ### Core Components
 
-1. **BootkitPkg** (Offensive Emulation)
+1. **BootkitPkg** (Offensive Emulation — C)
    - DXE phase driver injection
    - Boot Services table hooking
    - ExitBootServices interception
    - MSR hooking for stealth emulation
+   - Exception vector relocation (AArch64, conditional functional mode)
 
 2. **AttestationPkg** (Defensive Telemetry)
    - TPM PCR querying [0, 2, 4, 7]
@@ -55,6 +56,12 @@ Barzakh safely models Tactics, Techniques, and Procedures (TTPs) from known in-t
    - 18 specialized detectors for bootkit artifact detection
    - Target: ≥85% TPR, <5% FPR, ROC-AUC ≥0.92
    - See [`src/barzakh-scanner-rs/README.md`](src/barzakh-scanner-rs/README.md)
+
+4. **Barzakh Adversary** (Red-Team Payload Generator — Rust)
+   - 5 payload generators targeting each scanner detection path
+   - Closed-loop validation: generate → scan → assert detection
+   - Corpus generator for automated TPR/FPR measurement
+   - See [`src/barzakh-scanner-rs/crates/barzakh-adversary/`](src/barzakh-scanner-rs/crates/barzakh-adversary/)
 
 ## 🔒 Security Safeguards
 
@@ -76,7 +83,7 @@ Barzakh safely models Tactics, Techniques, and Procedures (TTPs) from known in-t
 | Component | Technology |
 |-----------|-----------|
 | Development Kit | EDK II (UEFI Development Kit) |
-| Languages | C11 (EDK II), Rust (Scanner) |
+| Languages | C11 (EDK II), Rust (Scanner + Adversary) |
 | Virtualization | QEMU + KVM + OVMF |
 | Security Module | TPM 2.0 (swtpm) |
 | Guest OS | Windows 10/11, Ubuntu Linux |
@@ -88,17 +95,20 @@ barzakh/
 ├── docs/
 │   ├── SETUP.md                    # Environment setup guide
 │   ├── ARCHITECTURE.md             # Technical architecture
-│   └── TESTING.md                  # Testing strategy
+│   ├── TESTING.md                  # Testing strategy
+│   └── USECASES.md                 # Offense & defense use cases
 ├── src/
-│   ├── BootkitPkg/                 # UEFI bootkit emulation
+│   ├── BootkitPkg/                 # UEFI bootkit emulation (C)
 │   │   ├── DxeInject/              # DXE phase injection + kill-switches
-│   │   └── ExitBootHook/           # ExitBootServices interception
+│   │   ├── ExitBootHook/           # ExitBootServices interception
+│   │   └── Aarch64/               # ARM64 modules (ExceptionVectorHook, etc.)
 │   ├── AttestationPkg/             # TPM attestation & telemetry
 │   │   ├── TpmAttestation/         # PCR monitoring
 │   │   └── EventLogExtractor/      # TCG event log parsing
-│   └── barzakh-scanner-rs/           # Detection engine (Rust)
-│       ├── crates/barzakh-core/    # Library: 18 detectors + reports
-│       └── crates/barzakh-cli/         # CLI binary
+│   └── barzakh-scanner-rs/         # Rust workspace
+│       ├── crates/barzakh-core/    # Detection engine: 18 detectors + reports
+│       ├── crates/barzakh-cli/     # CLI binary (barzakh-scanner)
+│       └── crates/barzakh-adversary/ # Red-team payload generator
 ├── scripts/
 │   ├── build.sh                    # EDK II compilation
 │   ├── qemu-run.sh                 # QEMU test harness with vTPM
@@ -209,6 +219,12 @@ cargo build --release
 cd src/barzakh-scanner-rs
 cargo test
 
+# Run adversary red-team tests (payload generation + detection validation)
+cargo test -p barzakh-adversary
+
+# Run corpus validation (E2E: generates payloads, scans them, measures TPR/FPR)
+cargo test -p barzakh-adversary -- --ignored corpus_validation
+
 # Check formatting & lint
 cargo fmt --check
 cargo clippy -- -D warnings
@@ -231,6 +247,7 @@ cargo audit
 - [`docs/SETUP.md`](docs/SETUP.md) - Environment setup instructions
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) - System architecture
 - [`docs/TESTING.md`](docs/TESTING.md) - Testing strategy
+- [`docs/USECASES.md`](docs/USECASES.md) - Offense & defense use cases
 - [`src/barzakh-scanner-rs/README.md`](src/barzakh-scanner-rs/README.md) - Scanner documentation
 - [`tests/README.md`](tests/README.md) - Test suite guide
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) - Contribution guidelines

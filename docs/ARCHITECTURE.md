@@ -32,10 +32,31 @@ sequenceDiagram
 | Component | Technology | Specification / Application |
 | :--- | :--- | :--- |
 | **Development Kit** | EDK II | Industry standard for UEFI firmware driver development. |
-| **Languages** | C11, NASM | Low-level hardware manipulation and Ring-0 context switching. |
+| **Languages** | C11, NASM, Rust | C for firmware-level implants, Rust for scanner and adversary tooling. |
 | **Hypervisor** | QEMU + KVM | Hardware virtualization platform for running test environments. |
 | **Firmware Payload** | OVMF | Specific Open Virtual Machine Firmware builds for deterministic reproducibility. |
 | **Security Module** | TPM 2.0 | Hardware root of trust for PCR queries and event log measurements. |
+
+### 2.1 Three-Layer Architecture
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│  Layer 1: C Implants (BootkitPkg)                                     │
+│  Real DXE drivers that model bootkit TTPs inside QEMU.                │
+│  Simulation by default; functional mode opt-in via build flag.        │
+├───────────────────────────────────────────────────────────────────────┤
+│  Layer 2: Rust Adversary (barzakh-adversary)                          │
+│  Red-team tooling that generates binary payloads, deploys them,       │
+│  and validates scanner coverage in a closed loop.                     │
+├───────────────────────────────────────────────────────────────────────┤
+│  Layer 3: Rust Scanner (barzakh-core + barzakh-cli)                   │
+│  Defense engine with 18 detectors that analyzes memory dumps          │
+│  and firmware images for bootkit artifacts.                           │
+└───────────────────────────────────────────────────────────────────────┘
+
+Data flow:  Adversary generates payload → Scanner detects → Results validated
+            C implants run in QEMU → Memory dump extracted → Scanner analyzes
+```
 
 ## 3. Emulation Module: UEFI Hooking Mechanisms
 
@@ -132,17 +153,22 @@ barzakh/
 ├── docs/
 │   ├── SETUP.md              # Environment setup guide
 │   ├── ARCHITECTURE.md       # This file
-│   └── TESTING.md            # Testing strategy
+│   ├── TESTING.md            # Testing strategy
+│   └── USECASES.md           # Offense & defense use cases
 ├── src/
-│   ├── BootkitPkg/           # EDK II package: UEFI bootkit emulation
+│   ├── BootkitPkg/           # EDK II package: UEFI bootkit emulation (C)
 │   │   ├── DxeInject/        # DXE phase implantation + kill-switches
-│   │   └── ExitBootHook/     # ExitBootServices interception & MSR hooking
+│   │   ├── ExitBootHook/     # ExitBootServices interception & MSR hooking
+│   │   └── Aarch64/          # ARM64 modules (ExceptionVectorHook, etc.)
 │   ├── AttestationPkg/       # Defensive TPM querying & event log extractors
-│   └── BarzakhScanner/         # Detection engine (Python)
+│   └── barzakh-scanner-rs/   # Rust workspace
+│       ├── crates/barzakh-core/      # Detection engine library
+│       ├── crates/barzakh-cli/       # CLI binary
+│       └── crates/barzakh-adversary/ # Red-team payload generator
 ├── scripts/
 │   ├── build.sh              # EDK II compilation
 │   ├── qemu-run.sh           # QEMU test harness with vTPM
-│   ├── nvram-recovery.py     # NVRAM backup/restore
+│   ├── qemu-e2e.sh           # End-to-end testing
 │   ├── validate-environment.sh # Pre-flight checks
 │   └── audit-log.sh          # Append-only execution audit logger
 ├── tests/                    # Unit, integration, and corpus tests
@@ -151,3 +177,64 @@ barzakh/
 ├── SECURITY.md
 └── README.md
 ```
+
+## 7. Adversary Crate Architecture
+
+The `barzakh-adversary` crate implements a red-team payload generation and validation framework.
+
+### 7.1 Payload Trait
+
+```rust
+pub trait Payload: Send + Sync {
+    fn name(&self) -> &str;
+    fn arch(&self) -> Arch;
+    fn generate(&self, config: &PayloadConfig) -> Result<Vec<u8>>;
+    fn expected_detections(&self) -> Vec<ExpectedFinding>;
+}
+```
+
+Each payload generates a raw binary blob mimicking a specific bootkit artifact. The `expected_detections()` method declares which scanner detectors should fire, enabling automated validation.
+
+### 7.2 Payload Registry
+
+| Payload | Binary Output | Scanner Detector Triggered |
+| :--- | :--- | :--- |
+| `TrampolinePayload` | x86_64: `FF 25` indirect JMP; ARM64: `LDR X16 + BR X16` | `memory` (trampoline patterns) |
+| `BootServicesHookPayload` | `BOOTSERV` header + mismatched CRC32 + suspicious pointers | `hook` (CRC + pointer range) |
+| `PeInjectPayload` | Minimal MZ + PE\0\0 at page-aligned offset | `memory` (PE in runtime) |
+| `FirmwareVolumeTamperPayload` | `_FVH` signature with corrupted 16-bit header checksum | `firmware_volume` (checksum failure) |
+| `SignaturePlantPayload` | BlackLotus, CosmicStrand, MoonBounce byte sequences | `memory` (Aho-Corasick match) |
+
+### 7.3 Validation Pipeline
+
+```
+generate() → Vec<u8> → write to temp file → BarzakhScanner::scan()
+    → compare ScanResult.findings against expected_detections()
+    → report: detected/missed, matched findings count, severity
+```
+
+### 7.4 Corpus Generator
+
+`generate_corpus(output_dir)` produces paired files for each payload:
+- `malicious_<name>.bin` — generated payload (triggers detections)
+- `clean_<name>.bin` — zero-filled reference (no detections)
+
+These integrate with `BarzakhScanner::validate_against_corpus()` for automated TPR/FPR measurement.
+
+## 8. Conditional Functional Mode (AArch64)
+
+The `ExceptionVectorHook` module supports two compilation modes:
+
+| Mode | Build Flag | Behavior |
+| :--- | :--- | :--- |
+| **Simulation** (default) | None | Logs simulated VBAR relocation steps via DEBUG output |
+| **Functional** | `-DBARZAKH_FUNCTIONAL=1` | Performs real `MRS/MSR VBAR_EL1` operations in QEMU EL1 |
+
+In functional mode, the module:
+1. Reads the current VBAR_EL1 via inline assembly
+2. Allocates a page-aligned buffer via Boot Services
+3. Copies the original 2KB vector table
+4. Patches the Lower EL AArch64 Sync entry with a trampoline (`LDR X16; BR X16` → original handler)
+5. Redirects VBAR_EL1 to the new table via `MSR + ISB`
+
+The trampoline redirects back to the original handler — demonstrating the hook mechanism without destabilizing the system.
