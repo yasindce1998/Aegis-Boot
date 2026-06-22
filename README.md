@@ -96,7 +96,8 @@ barzakh/
 │   ├── SETUP.md                    # Environment setup guide
 │   ├── ARCHITECTURE.md             # Technical architecture
 │   ├── TESTING.md                  # Testing strategy
-│   └── USECASES.md                 # Offense & defense use cases
+│   ├── USECASES.md                 # Offense & defense use cases
+│   └── LAB_TESTING.md             # Real hardware lab testing guide
 ├── src/
 │   ├── BootkitPkg/                 # UEFI bootkit emulation (C)
 │   │   ├── DxeInject/              # DXE phase injection + kill-switches
