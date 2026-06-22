@@ -36,23 +36,53 @@
 #define SSDT_CREATOR_REVISION        0x20200110
 
 //
-// AML opcodes used in payload
+// AML opcodes used in payload (guarded to avoid conflict with MdePkg ACPI headers)
 //
+#ifndef AML_SCOPE_OP
 #define AML_SCOPE_OP                 0x10
+#endif
+#ifndef AML_NAME_OP
 #define AML_NAME_OP                  0x08
+#endif
+#ifndef AML_OPREGION_OP
 #define AML_OPREGION_OP              0x80
+#endif
+#ifndef AML_EXT_PREFIX
 #define AML_EXT_PREFIX               0x5B
+#endif
+#ifndef AML_EXT_OPREGION_OP
 #define AML_EXT_OPREGION_OP          0x80
+#endif
+#ifndef AML_FIELD_OP
 #define AML_FIELD_OP                 0x81
+#endif
+#ifndef AML_METHOD_OP
 #define AML_METHOD_OP                0x14
+#endif
+#ifndef AML_RETURN_OP
 #define AML_RETURN_OP                0xA4
+#endif
+#ifndef AML_ZERO_OP
 #define AML_ZERO_OP                  0x00
+#endif
+#ifndef AML_ONE_OP
 #define AML_ONE_OP                   0x01
+#endif
+#ifndef AML_BYTE_PREFIX
 #define AML_BYTE_PREFIX              0x0A
+#endif
+#ifndef AML_WORD_PREFIX
 #define AML_WORD_PREFIX              0x0B
+#endif
+#ifndef AML_DWORD_PREFIX
 #define AML_DWORD_PREFIX             0x0C
+#endif
+#ifndef AML_QWORD_PREFIX
 #define AML_QWORD_PREFIX             0x0E
+#endif
+#ifndef AML_STRING_PREFIX
 #define AML_STRING_PREFIX            0x0D
+#endif
 
 //
 // OperationRegion address spaces
