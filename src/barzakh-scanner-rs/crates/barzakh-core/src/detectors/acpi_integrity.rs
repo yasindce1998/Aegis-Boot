@@ -41,9 +41,7 @@ impl AcpiIntegrityDetector {
                             as usize;
 
                     // Sanity check on table length
-                    if !(36..=0x1000000).contains(&table_length)
-                        || i + table_length > data.len()
-                    {
+                    if !(36..=0x1000000).contains(&table_length) || i + table_length > data.len() {
                         continue;
                     }
 
