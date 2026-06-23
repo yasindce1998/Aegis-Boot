@@ -299,8 +299,13 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install cargo-audit
-        run: cargo install cargo-audit
+        run: |
+          curl -LSfs https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          cargo binstall cargo-audit --no-confirm
 
       - name: Run Audit
         working-directory: src/barzakh-scanner-rs
