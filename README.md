@@ -8,7 +8,7 @@
 
 *Offense emulation from Ring 0 to Ring -3 | 30 detection engines | Closed-loop adversary validation*
 
-[![CI](https://github.com/yasindce1998/Barzakh/actions/workflows/rust-scanner.yml/badge.svg)](https://github.com/yasindce1998/Barzakh/actions)
+[![CI](https://github.com/yasindce1998/Barzakh/actions/workflows/barzakh-ci.yml/badge.svg)](https://github.com/yasindce1998/Barzakh/actions/workflows/barzakh-ci.yml)
 [![Rust](https://img.shields.io/badge/Rust-stable-orange)](src/barzakh-scanner-rs/)
 [![EDK II](https://img.shields.io/badge/EDK%20II-2024.05-blue)](src/BootkitPkg/)
 [![License: Research](https://img.shields.io/badge/License-Academic%20Research-red)](#-license)
