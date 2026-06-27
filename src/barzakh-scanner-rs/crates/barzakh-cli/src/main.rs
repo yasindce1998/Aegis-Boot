@@ -443,10 +443,7 @@ fn cmd_scan(args: ScanArgs) -> Result<()> {
             "Scanning".bold(),
             args.target.display()
         );
-        println!(
-            "  {} detectors loaded",
-            detector_count.to_string().cyan()
-        );
+        println!("  {} detectors loaded", detector_count.to_string().cyan());
     }
 
     let pb = if !args.quiet && !args.json {
@@ -522,11 +519,7 @@ fn cmd_scan(args: ScanArgs) -> Result<()> {
 
         if result.summary.bootkit_detected {
             println!();
-            println!(
-                "  {} {}",
-                "⚠".red().bold(),
-                "BOOTKIT DETECTED".red().bold()
-            );
+            println!("  {} {}", "⚠".red().bold(), "BOOTKIT DETECTED".red().bold());
         }
     }
 
@@ -580,11 +573,7 @@ fn cmd_baseline_create(args: BaselineCreateArgs) -> Result<()> {
 
 fn cmd_baseline_show(args: BaselineShowArgs) -> Result<()> {
     let baseline = Baseline::load(&args.path)?;
-    println!(
-        "{} Baseline: {}",
-        "▶".cyan().bold(),
-        args.path.display()
-    );
+    println!("{} Baseline: {}", "▶".cyan().bold(), args.path.display());
     println!("{}", serde_json::to_string_pretty(&baseline)?);
     Ok(())
 }
@@ -642,10 +631,22 @@ fn cmd_validate(args: ValidateArgs) -> Result<()> {
         println!();
         println!("  {}", "Validation Results".bold());
         println!("  ─────────────────────────────");
-        println!("  True Positives:  {}", metrics.true_positives.to_string().green());
-        println!("  False Positives: {}", metrics.false_positives.to_string().red());
-        println!("  True Negatives:  {}", metrics.true_negatives.to_string().green());
-        println!("  False Negatives: {}", metrics.false_negatives.to_string().red());
+        println!(
+            "  True Positives:  {}",
+            metrics.true_positives.to_string().green()
+        );
+        println!(
+            "  False Positives: {}",
+            metrics.false_positives.to_string().red()
+        );
+        println!(
+            "  True Negatives:  {}",
+            metrics.true_negatives.to_string().green()
+        );
+        println!(
+            "  False Negatives: {}",
+            metrics.false_negatives.to_string().red()
+        );
         println!("  ─────────────────────────────");
         println!(
             "  TPR: {}",
@@ -785,11 +786,19 @@ fn cmd_adversary_validate(args: AdversaryValidateArgs) -> Result<()> {
     println!("  {}", "Summary".bold());
     println!("  ─────────────────────────────");
     println!("  Total payloads: {}", report.total_payloads);
-    println!("  Detected:       {}", report.detected_count.to_string().green());
-    println!("  Missed:         {}", report.missed_count.to_string().red());
+    println!(
+        "  Detected:       {}",
+        report.detected_count.to_string().green()
+    );
+    println!(
+        "  Missed:         {}",
+        report.missed_count.to_string().red()
+    );
     println!(
         "  TPR:            {}",
-        format!("{:.2}%", report.true_positive_rate * 100.0).cyan().bold()
+        format!("{:.2}%", report.true_positive_rate * 100.0)
+            .cyan()
+            .bold()
     );
 
     Ok(())
@@ -825,15 +834,12 @@ fn cmd_detectors_list(json: bool) -> Result<()> {
 fn cmd_detectors_info(name: &str) -> Result<()> {
     let detectors = barzakh_core::detectors::create_all_detectors(None);
 
-    let detector = detectors
-        .iter()
-        .find(|d| d.name() == name)
-        .ok_or_else(|| {
-            anyhow::anyhow!(
-                "Unknown detector '{}'. Use 'barzakh detectors list' to see available detectors.",
-                name
-            )
-        })?;
+    let detector = detectors.iter().find(|d| d.name() == name).ok_or_else(|| {
+        anyhow::anyhow!(
+            "Unknown detector '{}'. Use 'barzakh detectors list' to see available detectors.",
+            name
+        )
+    })?;
 
     println!("{} {}", "Detector:".bold(), detector.name().cyan());
     Ok(())
@@ -857,11 +863,7 @@ fn cmd_qemu_run(args: QemuRunArgs) -> Result<()> {
     println!("  ESP:      {}", args.esp.display());
     println!();
     println!("  {}", "Command:".bold());
-    println!(
-        "  {} {}",
-        config.binary_name(),
-        qemu_args.join(" ")
-    );
+    println!("  {} {}", config.binary_name(), qemu_args.join(" "));
 
     Ok(())
 }
@@ -877,11 +879,7 @@ fn cmd_qemu_dump(args: QemuDumpArgs) -> Result<()> {
 }
 
 fn cmd_esp_build(args: EspBuildArgs) -> Result<()> {
-    println!(
-        "{} Building ESP image ({}MB)",
-        "▶".cyan().bold(),
-        args.size
-    );
+    println!("{} Building ESP image ({}MB)", "▶".cyan().bold(), args.size);
 
     let payload_data = std::fs::read(&args.payload)?;
     let builder = EspImageBuilder::new(args.size);
@@ -892,7 +890,11 @@ fn cmd_esp_build(args: EspBuildArgs) -> Result<()> {
         "✓".green().bold(),
         args.output.display()
     );
-    println!("  Payload: {} ({} bytes)", args.payload.display(), payload_data.len());
+    println!(
+        "  Payload: {} ({} bytes)",
+        args.payload.display(),
+        payload_data.len()
+    );
 
     Ok(())
 }
