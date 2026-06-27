@@ -63,6 +63,23 @@ impl Payload for TrampolinePayload {
                 let mut cursor2 = std::io::Cursor::new(&mut data[offset2 + 8..offset2 + 16]);
                 cursor2.write_u64::<LittleEndian>(target2)?;
             }
+            Arch::RiscV64 => {
+                // AUIPC t1, 0 + LD t1, 8(t1) + JALR x0, t1, 0 + 8-byte target
+                let offset = 0x100;
+                let mut cursor = std::io::Cursor::new(&mut data[offset..offset + 20]);
+                cursor.write_u32::<LittleEndian>(0x0000_0317)?; // AUIPC t1, 0
+                cursor.write_u32::<LittleEndian>(0x0083_3303)?; // LD t1, 8(t1)
+                cursor.write_u32::<LittleEndian>(0x0003_0067)?; // JALR x0, t1, 0
+                cursor.write_u64::<LittleEndian>(0xFFFF_FFE0_0000_1000)?; // target
+
+                // Second RISC-V trampoline
+                let offset2 = 0x280;
+                let mut cursor2 = std::io::Cursor::new(&mut data[offset2..offset2 + 20]);
+                cursor2.write_u32::<LittleEndian>(0x0000_0317)?;
+                cursor2.write_u32::<LittleEndian>(0x0083_3303)?;
+                cursor2.write_u32::<LittleEndian>(0x0003_0067)?;
+                cursor2.write_u64::<LittleEndian>(0xFFFF_FFE0_0080_0000)?;
+            }
         }
 
         Ok(data)

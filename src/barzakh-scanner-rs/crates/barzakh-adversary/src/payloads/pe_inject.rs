@@ -39,9 +39,14 @@ impl Payload for PeInjectPayload {
 
         // Minimal COFF header after PE sig
         let coff_offset = abs_pe_sig + 4;
-        // Machine: x86_64 (0x8664)
-        data[coff_offset] = 0x64;
-        data[coff_offset + 1] = 0x86;
+        // Machine type based on architecture
+        let machine: u16 = match config.arch {
+            Arch::X86_64 => 0x8664,
+            Arch::Aarch64 => 0xAA64,
+            Arch::RiscV64 => 0x5064,
+        };
+        data[coff_offset] = machine as u8;
+        data[coff_offset + 1] = (machine >> 8) as u8;
         // NumberOfSections: 1
         data[coff_offset + 2] = 0x01;
         data[coff_offset + 3] = 0x00;

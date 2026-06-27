@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 pub enum Arch {
     X86_64,
     Aarch64,
+    RiscV64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

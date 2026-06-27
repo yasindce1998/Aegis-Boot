@@ -27,6 +27,7 @@ impl QemuConfig {
         match self.arch {
             Arch::X86_64 => "qemu-system-x86_64",
             Arch::Aarch64 => "qemu-system-aarch64",
+            Arch::RiscV64 => "qemu-system-riscv64",
         }
     }
 
@@ -54,6 +55,21 @@ impl QemuConfig {
             Arch::Aarch64 => {
                 args.extend(["-machine".to_string(), "virt".to_string()]);
                 args.extend(["-cpu".to_string(), "cortex-a72".to_string()]);
+                if let Some(ref fw) = self.firmware_path {
+                    args.extend([
+                        "-drive".to_string(),
+                        format!("if=pflash,format=raw,readonly=on,file={}", fw),
+                    ]);
+                }
+                args.extend([
+                    "-drive".to_string(),
+                    format!("format=raw,file={}", esp_image.to_string_lossy()),
+                ]);
+            }
+            Arch::RiscV64 => {
+                args.extend(["-machine".to_string(), "virt".to_string()]);
+                args.extend(["-cpu".to_string(), "rv64".to_string()]);
+                args.extend(["-bios".to_string(), "none".to_string()]);
                 if let Some(ref fw) = self.firmware_path {
                     args.extend([
                         "-drive".to_string(),

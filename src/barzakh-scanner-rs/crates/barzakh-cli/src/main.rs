@@ -236,6 +236,8 @@ enum ArchArg {
     X86_64,
     #[value(name = "aarch64")]
     Aarch64,
+    #[value(name = "riscv64")]
+    RiscV64,
 }
 
 impl From<ArchArg> for Arch {
@@ -243,6 +245,7 @@ impl From<ArchArg> for Arch {
         match a {
             ArchArg::X86_64 => Arch::X86_64,
             ArchArg::Aarch64 => Arch::Aarch64,
+            ArchArg::RiscV64 => Arch::RiscV64,
         }
     }
 }
@@ -910,7 +913,7 @@ fn cmd_info() -> Result<()> {
     println!("  Version:       {}", env!("CARGO_PKG_VERSION").cyan());
     println!("  Detectors:     {}", detectors.len().to_string().yellow());
     println!("  Payloads:      {}", payloads.len().to_string().yellow());
-    println!("  Architectures: x86_64, aarch64");
+    println!("  Architectures: x86_64, aarch64, riscv64");
     println!("  Report formats: JSON, HTML, Markdown");
     println!();
     println!("  {}", "Detector Categories:".bold());

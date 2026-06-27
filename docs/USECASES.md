@@ -149,7 +149,7 @@ barzakh-scanner --target current-firmware.bin --baseline baseline.json --report 
 
 **How Barzakh helps:**
 1. Point the scanner at the raw memory dump
-2. The 18 detectors run in parallel (< 500ms for typical dumps)
+2. The 40 detectors run in parallel (< 500ms for typical dumps)
 3. Findings are prioritized by severity (Critical > High > Medium > Low > Info)
 4. The HTML report provides analyst-friendly descriptions of each finding
 

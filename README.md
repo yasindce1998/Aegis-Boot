@@ -6,7 +6,7 @@
 
 **The most comprehensive open-source UEFI firmware security research platform**
 
-*Offense emulation from Ring 0 to Ring -3 | 30 detection engines | Closed-loop adversary validation*
+*Offense emulation from Ring 0 to Ring -3 | 43 detection engines | Closed-loop adversary validation*
 
 [![CI](https://github.com/yasindce1998/Barzakh/actions/workflows/barzakh-ci.yml/badge.svg)](https://github.com/yasindce1998/Barzakh/actions/workflows/barzakh-ci.yml)
 [![Rust](https://img.shields.io/badge/Rust-stable-orange)](src/barzakh-scanner-rs/)
@@ -29,8 +29,8 @@ Barzakh is a full-stack firmware security research platform that models real-wor
 
 **Key capabilities:**
 - **31 offense modules** spanning x86_64, AArch64/Apple Silicon, and RISC-V architectures
-- **30 specialized detectors** with firmware-specific heuristics and structural analysis
-- **17 adversary payload generators** for automated true-positive validation
+- **43 specialized detectors** with firmware-specific heuristics and structural analysis
+- **33 adversary payload generators** for automated true-positive validation
 - **Full Ring -3 coverage** — ME/PSP manipulation, HECI interception, AMT exploitation, fTPM forgery, DMA attacks
 - **Hardware lab testing path** — documented progression from simulation to real silicon
 
@@ -38,7 +38,9 @@ Barzakh is a full-stack firmware security research platform that models real-wor
 
 | Threat | Technique | Barzakh Coverage |
 |--------|-----------|-----------------|
-| **BlackLotus** (CVE-2023-24932) | Secure Boot bypass via vulnerable shim | Secure Boot chain detector + bypass payload |
+| **BlackLotus** (CVE-2023-24932) | Secure Boot bypass via vulnerable shim | `blacklotus` detector + `blacklotus_mok` payload |
+| **LogoFAIL** (CVE-2023-40238) | Image parser overflow in UEFI firmware | `logofail` detector + `logofail_image` payload |
+| **PixieFail** (CVE-2023-45229+) | Network stack buffer overflows in EDK2 | `pixiefail` detector + `pixiefail_dhcp` payload |
 | **CosmicStrand** | SPI flash DXE persistence | FV integrity + SPI region + persistence detector |
 | **LoJax** | First in-the-wild SPI implant | ME/SPI detector + flash descriptor analysis |
 | **MoonBounce** | Modified core DXE in SPI flash | Boot Services hook + firmware volume diffing |
@@ -117,7 +119,7 @@ All offense modules ship with `SIMULATION_MODE = TRUE` — they model behavior w
 
 ### 2. Barzakh Scanner — Detection Engine (Rust)
 
-**30 specialized detectors** organized by attack surface:
+**43 specialized detectors** organized by attack surface:
 
 <details>
 <summary><b>Full Detector List</b></summary>
@@ -154,6 +156,19 @@ All offense modules ship with `SIMULATION_MODE = TRUE` — they model behavior w
 | 28 | `spi_region` | Ring -3 | SPI flash region boundary violations |
 | 29 | `optionrom` | Ring -3 | Malicious PCI Option ROM injection |
 | 30 | `nvram_entropy` | Ring -3 | NVRAM capsule anomaly detection |
+| 31 | `logofail` | Boot Process | Malicious BMP/image parser overflow (CVE-2023-40238) |
+| 32 | `pixiefail` | Network/PXE | DHCPv6/PXE stack exploits (CVE-2023-45229+) |
+| 33 | `blacklotus` | Boot Process | BlackLotus bootkit MOK/BCD manipulation |
+| 34 | `amd_psp` | Platform | AMD PSP directory/firmware tampering |
+| 35 | `boot_guard` | Platform | Intel Boot Guard ACM/KM/BPM policy bypass |
+| 36 | `auth_variable` | Chain | UEFI authenticated variable (PK/KEK/db) rollback |
+| 37 | `dxe_dispatcher` | Boot Process | DXE dependency expression hijacking |
+| 38 | `pei_implant` | Boot Process | PEI Core/PEIM phase rootkit implants |
+| 39 | `capsule_update` | Structure | Firmware capsule update header abuse |
+| 40 | `cxl_device` | Hardware/Bus | CXL.mem DMA attacks against system memory |
+| 41 | `arm_trustzone` | ARM/TrustZone | OP-TEE TA tampering, SMC call injection, IMG4 bypass |
+| 42 | `opensbi` | RISC-V | OpenSBI extension table hooking, mtvec redirect, M-mode escalation |
+| 43 | `pmp_bypass` | RISC-V | PMP misconfiguration, CSR write sequences, M-mode RWX regions |
 |  | `secureboot_chain` | Chain | Full Secure Boot chain-of-trust validation |
 
 </details>
@@ -165,13 +180,13 @@ All offense modules ship with `SIMULATION_MODE = TRUE` — they model behavior w
 | True Positive Rate | ≥ 85% | Validated via adversary corpus |
 | False Positive Rate | < 5% | Measured against clean firmware baselines |
 | ROC-AUC | ≥ 0.92 | Aggregated across all detector categories |
-| Scan Latency | < 500ms | Per-image, full 30-detector sweep |
+| Scan Latency | < 500ms | Per-image, full 43-detector sweep |
 
 ---
 
 ### 3. Barzakh Adversary — Red-Team Payload Generator (Rust)
 
-**17 payload generators** that produce realistic tampered firmware images for detection validation:
+**33 payload generators** that produce realistic tampered firmware images for detection validation:
 
 | Payload | Target Detector | Technique |
 |---------|----------------|-----------|
@@ -192,6 +207,22 @@ All offense modules ship with `SIMULATION_MODE = TRUE` — they model behavior w
 | `nvram_capsule` | `nvram_entropy` | Creates anomalous NVRAM capsule entries |
 | `s3_bootscript_inject` | `s3_bootscript` | Injects S3 DISPATCH opcodes |
 | `secureboot_bypass` | `secureboot_chain` | Simulates Secure Boot variable tampering |
+| `logofail_image` | `logofail` | Crafted BMP with integer overflow triggers |
+| `pixiefail_dhcp` | `pixiefail` | Malformed DHCPv6 with buffer overflow options |
+| `blacklotus_mok` | `blacklotus` | MOK manipulation + revoked bootloader hashes |
+| `psp_tamper` | `amd_psp` | AMD PSP directory corruption + oversized entries |
+| `boot_guard_bypass` | `boot_guard` | ACM/KM/BPM with SVN rollback + empty IBB |
+| `auth_var_rollback` | `auth_variable` | Authenticated variable monotonic counter rollback |
+| `dxe_depex_hijack` | `dxe_dispatcher` | Invalid DEPEX opcodes + stack overflow |
+| `pei_core_patch` | `pei_implant` | PEI Core entry point redirection + encrypted RAW |
+| `capsule_tamper` | `capsule_update` | Invalid capsule headers + absurd payload counts |
+| `cxl_dma_attack` | `cxl_device` | CXL DVSEC with DMA ranges in SMM/runtime memory |
+| `arm_trustzone` | `arm_trustzone` | OP-TEE TA header with suspicious load address |
+| `arm_iboot` | `arm_trustzone` | Apple IMG4 with null IV KBAG + empty SHSH certificate |
+| `arm_scm` | `arm_trustzone` | Qualcomm SCM call injection (SMC #0 with non-standard service IDs) |
+| `riscv_opensbi` | `opensbi` | OpenSBI extension table with redirected ecall handlers |
+| `riscv_uefi_boot` | `opensbi`, `memory` | RISC-V UEFI boot flow M-mode escalation |
+| `riscv_pmp_bypass` | `pmp_bypass` | PMP all-permissive config with full-range address match |
 
 **Validation loop:** `generate payload` → `scan with detector` → `assert finding raised` → measure TPR/FPR
 
@@ -276,9 +307,9 @@ barzakh/
 │   │   ├── TpmAttestation/         # PCR monitoring
 │   │   └── EventLogExtractor/      # TCG event log parsing
 │   └── barzakh-scanner-rs/         # Rust workspace
-│       ├── crates/barzakh-core/    # Detection engine (30 detectors)
+│       ├── crates/barzakh-core/    # Detection engine (43 detectors)
 │       ├── crates/barzakh-cli/     # CLI binary (barzakh-scanner)
-│       └── crates/barzakh-adversary/ # Red-team (17 payload generators)
+│       └── crates/barzakh-adversary/ # Red-team (33 payload generators)
 ├── scripts/
 │   ├── build.sh                    # EDK II compilation
 │   ├── qemu-run.sh                 # QEMU test harness with vTPM
@@ -352,7 +383,7 @@ cargo build --release
 ### 4. Scan Firmware
 
 ```bash
-# Scan a firmware dump with all 30 detectors
+# Scan a firmware dump with all 43 detectors
 ./target/release/barzakh-scanner --target /path/to/firmware.bin --report --format html --output report.html
 
 # Compare against a known-good baseline
@@ -379,7 +410,7 @@ cargo test -p barzakh-adversary -- --ignored corpus_validation
 ```bash
 cd src/barzakh-scanner-rs
 
-# Unit + integration tests (30 detectors, 17 payloads)
+# Unit + integration tests (43 detectors, 33 payloads)
 cargo test
 
 # Adversary red-team tests

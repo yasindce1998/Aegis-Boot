@@ -50,8 +50,8 @@ sequenceDiagram
 │  and validates scanner coverage in a closed loop.                     │
 ├───────────────────────────────────────────────────────────────────────┤
 │  Layer 3: Rust Scanner (barzakh-core + barzakh-cli)                   │
-│  Defense engine with 18 detectors that analyzes memory dumps          │
-│  and firmware images for bootkit artifacts.                           │
+│  Defense engine with 43 detectors (x86_64, ARM, RISC-V) that         │
+│  analyzes memory dumps and firmware images for bootkit artifacts.     │
 └───────────────────────────────────────────────────────────────────────┘
 
 Data flow:  Adversary generates payload → Scanner detects → Results validated
@@ -159,7 +159,8 @@ barzakh/
 │   ├── BootkitPkg/           # EDK II package: UEFI bootkit emulation (C)
 │   │   ├── DxeInject/        # DXE phase implantation + kill-switches
 │   │   ├── ExitBootHook/     # ExitBootServices interception & MSR hooking
-│   │   └── Aarch64/          # ARM64 modules (ExceptionVectorHook, etc.)
+│   │   ├── Aarch64/          # ARM64 modules (ExceptionVectorHook, etc.)
+│   │   └── RiscV/            # RISC-V M-mode firmware injection
 │   ├── AttestationPkg/       # Defensive TPM querying & event log extractors
 │   └── barzakh-scanner-rs/   # Rust workspace
 │       ├── crates/barzakh-core/      # Detection engine library
@@ -199,7 +200,7 @@ Each payload generates a raw binary blob mimicking a specific bootkit artifact. 
 
 | Payload | Binary Output | Scanner Detector Triggered |
 | :--- | :--- | :--- |
-| `TrampolinePayload` | x86_64: `FF 25` indirect JMP; ARM64: `LDR X16 + BR X16` | `memory` (trampoline patterns) |
+| `TrampolinePayload` | x86_64: `FF 25` indirect JMP; ARM64: `LDR X16 + BR X16`; RISC-V: `AUIPC + LD + JALR` | `memory` (trampoline patterns) |
 | `BootServicesHookPayload` | `BOOTSERV` header + mismatched CRC32 + suspicious pointers | `hook` (CRC + pointer range) |
 | `PeInjectPayload` | Minimal MZ + PE\0\0 at page-aligned offset | `memory` (PE in runtime) |
 | `FirmwareVolumeTamperPayload` | `_FVH` signature with corrupted 16-bit header checksum | `firmware_volume` (checksum failure) |

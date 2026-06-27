@@ -2,9 +2,11 @@
 
 High-performance UEFI bootkit detection engine written in Rust.
 
-Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to detect bootkit artifacts with high accuracy and minimal false positives. It implements 18 specialized detectors covering the full spectrum of firmware-level threats.
+Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to detect bootkit artifacts with high accuracy and minimal false positives. It implements 43 specialized detectors covering the full spectrum of firmware-level threats across x86_64, AArch64, and RISC-V architectures.
 
 ## Detection Capabilities
+
+### Core Detectors
 
 | Detector | Technique | Targets |
 |----------|-----------|---------|
@@ -26,6 +28,55 @@ Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to
 | Self-Erasure | Anti-forensics detection | Evidence destruction patterns |
 | Symbolic Execution | Path constraint solving | Obfuscated trigger conditions |
 | Time-Travel Debug | Execution trace replay | Hidden execution paths |
+
+### Intel ME / Management Engine
+
+| Detector | Technique | Targets |
+|----------|-----------|---------|
+| HECI Traffic | HECI/MEI command analysis | Suspicious host-ME communication |
+| ME SPI Region | ME region structure validation | Tampered ME firmware partitions |
+| AMT/SOL | AMT provisioning state inspection | Unauthorized remote management |
+| fTPM Integrity | TPM2 command stream analysis | Forged fTPM responses |
+
+### Platform Security
+
+| Detector | Technique | Targets |
+|----------|-----------|---------|
+| AMD PSP | PSP directory/entry validation | Tampered AMD Platform Security Processor firmware |
+| Intel Boot Guard | ACM/KM/BPM structure analysis | Boot Guard policy bypass, SVN rollback |
+| Auth Variable | Authenticated variable validation | PK/KEK/db rollback, missing signatures |
+
+### Boot Process Integrity
+
+| Detector | Technique | Targets |
+|----------|-----------|---------|
+| LogoFAIL | BMP/image parser overflow detection | Malicious logo images triggering CVE-2023-40238 |
+| PixieFail | DHCPv6/PXE option validation | Network boot stack exploits (CVE-2023-45229+) |
+| BlackLotus | MOK/BCD manipulation detection | BlackLotus bootkit persistence |
+| DXE Dispatcher | DEPEX section analysis | DXE load-order hijacking via dependency manipulation |
+| PEI Implant | PEI Core/PEIM structure validation | Pre-EFI initialization phase rootkits |
+| Capsule Update | Capsule header integrity checks | Firmware update mechanism abuse |
+
+### Hardware/Bus Attacks
+
+| Detector | Technique | Targets |
+|----------|-----------|---------|
+| CXL Device | CXL DVSEC/DMA range analysis | CXL.mem DMA attacks against system memory |
+| Attestation | Remote attestation validation | Forged attestation evidence |
+| Live Forensics | Runtime state analysis | Active bootkit indicators |
+
+### ARM / TrustZone
+
+| Detector | Technique | Targets |
+|----------|-----------|---------|
+| ARM TrustZone | OP-TEE TA header / SMC call / IMG4 analysis | TrustZone persistence, iBoot chain bypass |
+
+### RISC-V
+
+| Detector | Technique | Targets |
+|----------|-----------|---------|
+| OpenSBI | SBI extension table / mtvec / M-mode CSR analysis | OpenSBI firmware hooking, privilege escalation |
+| PMP Bypass | PMP config / CSR write / NOP sled detection | Physical Memory Protection misconfiguration exploits |
 
 ## Installation
 
@@ -68,7 +119,7 @@ barzakh-scanner-rs/
     │   │   ├── scanner.rs        # Scan orchestration
     │   │   ├── baseline.rs       # Baseline configuration
     │   │   ├── detector.rs       # Detector trait + types
-    │   │   ├── detectors/        # 18 detection modules
+    │   │   ├── detectors/        # 43 detection modules
     │   │   └── reports/          # HTML/JSON/Markdown reports
     │   └── tests/
     │       └── scanner_integration.rs
@@ -77,7 +128,7 @@ barzakh-scanner-rs/
     └── barzakh-adversary/        # Red-team payload generator
         ├── src/
         │   ├── lib.rs            # Payload trait + public API
-        │   ├── payloads/         # 5 payload generators
+        │   ├── payloads/         # 33 payload generators
         │   ├── validate/         # Scanner invocation + result comparison
         │   ├── corpus.rs         # Malicious/clean pair generator
         │   └── deploy/           # ESP image builder + QEMU orchestration (WIP)

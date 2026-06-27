@@ -1,7 +1,15 @@
 pub mod acpi_integrity;
+pub mod amd_psp;
 pub mod amt;
+pub mod arm_trustzone;
 pub mod attestation;
+pub mod auth_variable;
+pub mod blacklotus;
+pub mod boot_guard;
+pub mod capsule_update;
+pub mod cxl_device;
 pub mod differ;
+pub mod dxe_dispatcher;
 pub mod entropy;
 pub mod eventlog;
 pub mod firmware_volume;
@@ -9,15 +17,20 @@ pub mod ftpm;
 pub mod heci;
 pub mod hook;
 pub mod introspection;
+pub mod logofail;
 pub mod mbr;
 pub mod me_dma;
 pub mod me_spi;
 pub mod memory;
 pub mod nvram_entropy;
+pub mod opensbi;
 pub mod optionrom;
 pub mod pcr;
 pub mod pcr_oracle;
 pub mod pcr_replay;
+pub mod pei_implant;
+pub mod pixiefail;
+pub mod pmp_bypass;
 pub mod runtime;
 pub mod s3_bootscript;
 pub mod secureboot;
@@ -65,5 +78,18 @@ pub fn create_all_detectors(baseline: Option<Baseline>) -> Vec<Box<dyn Detector>
         Box::new(secureboot_chain::SecurebootChainDetector::new()),
         Box::new(optionrom::OptionromDetector::new()),
         Box::new(acpi_integrity::AcpiIntegrityDetector::new()),
+        Box::new(logofail::LogofailDetector::new()),
+        Box::new(pixiefail::PixiefailDetector::new()),
+        Box::new(blacklotus::BlacklotusDetector::new()),
+        Box::new(amd_psp::AmdPspDetector::new()),
+        Box::new(boot_guard::BootGuardDetector::new()),
+        Box::new(auth_variable::AuthVariableDetector::new()),
+        Box::new(dxe_dispatcher::DxeDispatcherDetector::new()),
+        Box::new(pei_implant::PeiImplantDetector::new()),
+        Box::new(capsule_update::CapsuleUpdateDetector::new()),
+        Box::new(cxl_device::CxlDeviceDetector::new()),
+        Box::new(arm_trustzone::ArmTrustzoneDetector::new()),
+        Box::new(opensbi::OpensbiDetector::new()),
+        Box::new(pmp_bypass::PmpBypassDetector::new()),
     ]
 }
