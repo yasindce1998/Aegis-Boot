@@ -6,7 +6,7 @@
 
 **The most comprehensive open-source UEFI firmware security research platform**
 
-*Offense emulation from Ring 0 to Ring -3 | 43 detection engines | Closed-loop adversary validation*
+*Offense emulation from Ring 0 to Ring -4 | 60 detection engines | Closed-loop adversary validation*
 
 [![CI](https://github.com/yasindce1998/Barzakh/actions/workflows/barzakh-ci.yml/badge.svg)](https://github.com/yasindce1998/Barzakh/actions/workflows/barzakh-ci.yml)
 [![Rust](https://img.shields.io/badge/Rust-stable-orange)](src/barzakh-scanner-rs/)
@@ -25,13 +25,13 @@
 
 ## 📋 What Is Barzakh?
 
-Barzakh is a full-stack firmware security research platform that models real-world bootkit TTPs across every privilege ring — from UEFI DXE drivers (Ring 0) down through SMM, Intel ME, AMD PSP, and platform DMA controllers (Ring -3). It pairs each offense technique with a corresponding detection engine, creating a closed-loop system where every attack is both reproducible and detectable.
+Barzakh is a full-stack firmware security research platform that models real-world bootkit TTPs across every privilege ring — from UEFI DXE drivers (Ring 0) down through SMM, Intel ME, AMD PSP, platform DMA controllers (Ring -3), and CPU microarchitectural threats (Ring -4). It pairs each offense technique with a corresponding detection engine, creating a closed-loop system where every attack is both reproducible and detectable.
 
 **Key capabilities:**
 - **31 offense modules** spanning x86_64, AArch64/Apple Silicon, and RISC-V architectures
-- **43 specialized detectors** with firmware-specific heuristics and structural analysis
-- **33 adversary payload generators** for automated true-positive validation
-- **Full Ring -3 coverage** — ME/PSP manipulation, HECI interception, AMT exploitation, fTPM forgery, DMA attacks
+- **60 specialized detectors** with firmware-specific heuristics and structural analysis
+- **55 adversary payload generators** for automated true-positive validation
+- **Full Ring -4 coverage** — CPU microcode, speculative execution, thermal/power covert channels, voltage glitching, debug interfaces, rowhammer
 - **Hardware lab testing path** — documented progression from simulation to real silicon
 
 ### Reference Adversaries Modeled
@@ -47,6 +47,9 @@ Barzakh is a full-stack firmware security research platform that models real-wor
 | **MosaicRegressor** | UEFI persistence framework | Multi-stage: FV tamper + PE inject + trampoline |
 | **Hacking Team (RCS)** | UEFI rootkit with Option ROM | Option ROM detector + PCI expansion analysis |
 | **FinSpy** | UEFI bootloader modification | ExitBootServices interception + memory scanning |
+| **Bootkitty** (2024) | First Linux UEFI bootkit, GRUB signature bypass | `linux_bootchain` detector + `bootkitty_grub_patch` payload |
+| **CVE-2024-7344** | Signed reloader loads unsigned PE payloads | `reloader` detector + `secureboot_reloader` payload |
+| **CVE-2023-1017/1018** | TPM 2.0 reference implementation buffer overflow | `tpm_command` detector + `tpm_ref_overflow` payload |
 
 ---
 
@@ -119,7 +122,7 @@ All offense modules ship with `SIMULATION_MODE = TRUE` — they model behavior w
 
 ### 2. Barzakh Scanner — Detection Engine (Rust)
 
-**43 specialized detectors** organized by attack surface:
+**60 specialized detectors** organized by attack surface:
 
 <details>
 <summary><b>Full Detector List</b></summary>
@@ -169,7 +172,24 @@ All offense modules ship with `SIMULATION_MODE = TRUE` — they model behavior w
 | 41 | `arm_trustzone` | ARM/TrustZone | OP-TEE TA tampering, SMC call injection, IMG4 bypass |
 | 42 | `opensbi` | RISC-V | OpenSBI extension table hooking, mtvec redirect, M-mode escalation |
 | 43 | `pmp_bypass` | RISC-V | PMP misconfiguration, CSR write sequences, M-mode RWX regions |
+| 44 | `linux_bootchain` | Boot Process | Linux UEFI bootkit detection (Bootkitty GRUB patches) |
+| 45 | `reloader` | Boot Process | CVE-2024-7344 signed UEFI app loading unsigned payloads |
+| 46 | `sbat` | Chain | SBAT revocation counter rollback detection |
+| 47 | `esp_integrity` | Structure | ESP partition rootkit persistence patterns |
+| 48 | `confidential_vm` | Platform | Intel TDX / AMD SEV-SNP measurement manipulation |
+| 49 | `bmc_spi` | Ring -3 | BMC-to-host lateral movement via SPI flash |
+| 50 | `http_boot` | Network/PXE | UEFI HTTP Boot MITM with embedded PE payloads |
+| 51 | `tpm_command` | TPM | CVE-2023-1017/1018 TPM 2.0 command buffer overflow |
+| 52 | `arm_tbbr` | ARM/TrustZone | ARM Trusted Board Boot Requirements chain bypass |
+| 53 | `wifi_dxe` | Hardware/Bus | Intel CNVi wireless DXE firmware injection |
+| 54 | `pluton` | Platform | Microsoft Pluton security processor interception |
 |  | `secureboot_chain` | Chain | Full Secure Boot chain-of-trust validation |
+| 55 | `microcode_injection` | Ring -4 | Malicious/unauthorized CPU microcode update detection |
+| 56 | `spectre_gadgets` | Ring -4 | Spectre/Meltdown gadget chains and missing barriers |
+| 57 | `thermal_covert` | Ring -4 | Thermal/power covert channel patterns (RAPL MSR abuse) |
+| 58 | `voltage_glitch` | Ring -4 | Voltage fault injection (Plundervolt/CLKscrew) setup |
+| 59 | `debug_interface` | Ring -4 | Unauthorized debug port enablement (DCI/JTAG/DAP) |
+| 60 | `rowhammer` | Ring -4 | Rowhammer exploitation patterns and TRR bypass |
 
 </details>
 
@@ -180,13 +200,13 @@ All offense modules ship with `SIMULATION_MODE = TRUE` — they model behavior w
 | True Positive Rate | ≥ 85% | Validated via adversary corpus |
 | False Positive Rate | < 5% | Measured against clean firmware baselines |
 | ROC-AUC | ≥ 0.92 | Aggregated across all detector categories |
-| Scan Latency | < 500ms | Per-image, full 43-detector sweep |
+| Scan Latency | < 500ms | Per-image, full 60-detector sweep |
 
 ---
 
 ### 3. Barzakh Adversary — Red-Team Payload Generator (Rust)
 
-**Standalone binary: `barzakh-adversary`** | **33 payload generators** that produce realistic tampered firmware images for detection validation:
+**Standalone binary: `barzakh-adversary`** | **55 payload generators** that produce realistic tampered firmware images for detection validation:
 
 ```bash
 # Standalone CLI commands (no cargo required — use the release binary)
@@ -233,6 +253,20 @@ barzakh-adversary esp --payload dxe_persistence # Build ESP image for hardware t
 | `riscv_opensbi` | `opensbi` | OpenSBI extension table with redirected ecall handlers |
 | `riscv_uefi_boot` | `opensbi`, `memory` | RISC-V UEFI boot flow M-mode escalation |
 | `riscv_pmp_bypass` | `pmp_bypass` | PMP all-permissive config with full-range address match |
+| `bootkitty_grub_patch` | `linux_bootchain` | Linux GRUB signature verification NOP sled |
+| `secureboot_reloader` | `reloader` | CVE-2024-7344 signed PE with embedded unsigned payload |
+| `sbat_rollback` | `sbat` | SBAT generation counter downgrade attack |
+| `esp_persistence` | `esp_integrity` | ESP partition rootkit with multi-path persistence |
+| `runtime_services_hook` | `runtime` | Runtime Services covert channel via GetVariable |
+| `tdx_ovmf_inject` | `confidential_vm` | Intel TDX OVMF measurement manipulation |
+| `bmc_spi_lateral` | `bmc_spi` | BMC IPMI/Redfish SPI flash lateral movement |
+| `gpu_vbios_implant` | `optionrom` | GPU Option ROM persistence with DXE stub injection |
+| `http_boot_mitm` | `http_boot` | UEFI HTTP Boot response with embedded PE payload |
+| `tpm_ref_overflow` | `tpm_command` | CVE-2023-1017/1018 TPM command buffer overflow |
+| `arm_tbbr_bypass` | `arm_tbbr` | ARM Trusted Board Boot chain bypass with zeroed hashes |
+| `wifi_dxe_inject` | `wifi_dxe` | Intel CNVi wireless DXE firmware injection |
+| `pluton_intercept` | `pluton` | Microsoft Pluton mailbox interception + DICE tampering |
+| `sev_snp_vmpl_escape` | `confidential_vm` | AMD SEV-SNP VMPL privilege confusion attack |
 
 **Validation loop:** `generate payload` → `scan with detector` → `assert finding raised` → measure TPR/FPR
 
@@ -317,9 +351,9 @@ barzakh/
 │   │   ├── TpmAttestation/         # PCR monitoring
 │   │   └── EventLogExtractor/      # TCG event log parsing
 │   └── barzakh-scanner-rs/         # Rust workspace
-│       ├── crates/barzakh-core/    # Detection engine (43 detectors)
+│       ├── crates/barzakh-core/    # Detection engine (60 detectors)
 │       ├── crates/barzakh-cli/     # CLI binaries (barzakh-scanner + barzakh-adversary)
-│       └── crates/barzakh-adversary/ # Red-team library (33 payload generators)
+│       └── crates/barzakh-adversary/ # Red-team library (55 payload generators)
 ├── scripts/
 │   ├── build.sh                    # EDK II compilation
 │   ├── qemu-run.sh                 # QEMU test harness with vTPM
@@ -393,7 +427,7 @@ cargo build --release
 ### 4. Scan Firmware
 
 ```bash
-# Scan a firmware dump with all 43 detectors
+# Scan a firmware dump with all 60 detectors
 ./target/release/barzakh-scanner --target /path/to/firmware.bin --report --format html --output report.html
 
 # Compare against a known-good baseline
@@ -413,7 +447,7 @@ cargo test -p barzakh-adversary
 cargo test -p barzakh-adversary -- --ignored corpus_validation
 
 # Or use the standalone barzakh-adversary CLI
-./target/release/barzakh-adversary list                    # List all 33 payloads
+./target/release/barzakh-adversary list                    # List all 55 payloads
 ./target/release/barzakh-adversary generate --arch x86_64  # Generate payloads
 ./target/release/barzakh-adversary corpus --output ./corpus # Generate test corpus
 ./target/release/barzakh-adversary validate --corpus ./corpus # Validate detection rates
@@ -426,7 +460,7 @@ cargo test -p barzakh-adversary -- --ignored corpus_validation
 ```bash
 cd src/barzakh-scanner-rs
 
-# Unit + integration tests (43 detectors, 33 payloads)
+# Unit + integration tests (60 detectors, 55 payloads)
 cargo test
 
 # Adversary red-team tests
@@ -495,7 +529,7 @@ If you discover a novel vulnerability during research:
 
 This project models real-world threats including BlackLotus, CosmicStrand, LoJax, MoonBounce, MosaicRegressor, FinSpy, and Hacking Team's UEFI rootkit. Key academic contributions:
 
-- **Full Ring -3 attack taxonomy** — first open-source platform covering ME, PSP, DMA, fTPM, and AMT attack surfaces with corresponding detection
+- **Full Ring -4 attack taxonomy** — first open-source platform covering ME, PSP, DMA, fTPM, AMT, and CPU microarchitectural (Spectre, Rowhammer, Plundervolt) attack surfaces with corresponding detection
 - **Closed-loop validation framework** — every detector has a matching adversary payload; TPR is measured, not estimated
 - **PCR replay algorithm** for TPM attestation validation against boot sequence manipulation
 - **Firmware Volume structural analysis** reducing false positives through context-aware detection

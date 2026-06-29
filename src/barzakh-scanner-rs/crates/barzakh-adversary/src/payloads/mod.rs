@@ -11,6 +11,7 @@ pub mod boot_guard_bypass;
 pub mod boot_services_hook;
 pub mod bootkitty_grub_patch;
 pub mod capsule_tamper;
+pub mod clkscrew_voltage;
 pub mod cxl_dma_attack;
 pub mod dxe_depex_hijack;
 pub mod esp_persistence;
@@ -19,19 +20,24 @@ pub mod fv_tamper;
 pub mod gpu_vbios_implant;
 pub mod heci_traffic;
 pub mod http_boot_mitm;
+pub mod jtag_dci_unlock;
 pub mod logofail_image;
 pub mod me_dma_inject;
 pub mod me_spi_region;
+pub mod meltdown_pte_leak;
+pub mod microcode_malicious;
 pub mod nvram_capsule;
 pub mod optionrom_inject;
 pub mod pe_inject;
 pub mod pei_core_patch;
 pub mod pixiefail_dhcp;
+pub mod plundervolt_sgx;
 pub mod pluton_intercept;
 pub mod psp_tamper;
 pub mod riscv_opensbi;
 pub mod riscv_pmp_bypass;
 pub mod riscv_uefi_boot;
+pub mod rowhammer_trr_bypass;
 pub mod runtime_services_hook;
 pub mod s3_bootscript_inject;
 pub mod sbat_rollback;
@@ -40,8 +46,10 @@ pub mod secureboot_reloader;
 pub mod sev_snp_vmpl_escape;
 pub mod signature_plant;
 pub mod smm_timing_anomaly;
+pub mod spectre_btb_inject;
 pub mod spi_region_tamper;
 pub mod tdx_ovmf_inject;
+pub mod thermal_rapl_exfil;
 pub mod tpm_ref_overflow;
 pub mod trampoline;
 pub mod wifi_dxe_inject;
@@ -97,5 +105,13 @@ pub fn create_all_payloads() -> Vec<Box<dyn Payload>> {
         Box::new(wifi_dxe_inject::WifiDxeInjectPayload),
         Box::new(pluton_intercept::PlutonInterceptPayload),
         Box::new(sev_snp_vmpl_escape::SevSnpVmplEscapePayload),
+        Box::new(microcode_malicious::MicrocodeMaliciousPayload),
+        Box::new(spectre_btb_inject::SpectreBtbInjectPayload),
+        Box::new(meltdown_pte_leak::MeltdownPteLeakPayload),
+        Box::new(thermal_rapl_exfil::ThermalRaplExfilPayload),
+        Box::new(plundervolt_sgx::PlundervoltSgxPayload),
+        Box::new(clkscrew_voltage::ClkscrewVoltagePayload),
+        Box::new(jtag_dci_unlock::JtagDciUnlockPayload),
+        Box::new(rowhammer_trr_bypass::RowhammerTrrBypassPayload),
     ]
 }

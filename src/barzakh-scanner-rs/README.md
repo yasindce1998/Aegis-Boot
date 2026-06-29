@@ -2,7 +2,7 @@
 
 High-performance UEFI bootkit detection engine written in Rust.
 
-Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to detect bootkit artifacts with high accuracy and minimal false positives. It implements 43 specialized detectors covering the full spectrum of firmware-level threats across x86_64, AArch64, and RISC-V architectures.
+Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to detect bootkit artifacts with high accuracy and minimal false positives. It implements 60 specialized detectors covering the full spectrum of firmware-level threats across x86_64, AArch64, and RISC-V architectures — from Ring 0 (UEFI DXE) down through Ring -4 (CPU microarchitecture).
 
 ## Detection Capabilities
 
@@ -70,6 +70,7 @@ Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to
 | Detector | Technique | Targets |
 |----------|-----------|---------|
 | ARM TrustZone | OP-TEE TA header / SMC call / IMG4 analysis | TrustZone persistence, iBoot chain bypass |
+| ARM TBBR | FIP header / NV counter / CoT hash validation | Trusted Board Boot chain-of-trust bypass |
 
 ### RISC-V
 
@@ -77,6 +78,32 @@ Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to
 |----------|-----------|---------|
 | OpenSBI | SBI extension table / mtvec / M-mode CSR analysis | OpenSBI firmware hooking, privilege escalation |
 | PMP Bypass | PMP config / CSR write / NOP sled detection | Physical Memory Protection misconfiguration exploits |
+
+### Ring -4 / CPU Microarchitecture
+
+| Detector | Technique | Targets |
+|----------|-----------|---------|
+| Microcode Injection | Intel MCU header / AMD equiv table analysis | Malicious CPU microcode updates in firmware |
+| Spectre Gadgets | Indirect branch / CLFLUSH+RDTSC / barrier removal detection | Speculative execution side-channel gadgets |
+| Thermal Covert | RAPL MSR / thermal throttle / P-state modulation analysis | Thermal/power covert channel patterns |
+| Voltage Glitch | MSR 0x150 / DVFS / PMIC I2C write detection | Plundervolt/CLKscrew voltage fault injection |
+| Debug Interface | DCI enable / JTAG TAP / DAP unlock / HDC MSR analysis | Unauthorized debug port exploitation |
+| Rowhammer | CLFLUSH loop / TRR bypass / refresh suppression detection | Rowhammer exploitation patterns |
+
+### 2024-2026 Threat Detectors
+
+| Detector | Technique | Targets |
+|----------|-----------|---------|
+| Linux Bootchain | GRUB NOP-sled / vmlinuz integrity analysis | Bootkitty-style Linux UEFI bootkits |
+| Reloader | PE-in-PE / signed loader exploitation | CVE-2024-7344 reloader.efi bypass |
+| SBAT | SBAT generation counter validation | Secure Boot Advanced Targeting rollback |
+| ESP Integrity | FAT32 / EFI bootloader path analysis | ESP partition persistence rootkits |
+| Confidential VM | TDVF/SEV-SNP measurement validation | TDX injection, VMPL confusion attacks |
+| BMC SPI | IPMI KCS / Redfish SPI targeting | BMC-to-host lateral movement |
+| HTTP Boot | HTTP response + embedded PE detection | UEFI HTTP Boot MITM attacks |
+| TPM Command | TPM2 command buffer size validation | CVE-2023-1017/1018 buffer overflow |
+| WiFi DXE | Intel CNVi device / DXE dep-ex analysis | Wireless firmware DXE injection |
+| Pluton | Pluton mailbox / DICE attestation analysis | Microsoft Pluton interception attacks |
 
 ## Installation
 
@@ -120,7 +147,7 @@ barzakh-scanner info
 ### barzakh-adversary (Offensive)
 
 ```bash
-# List all 33 available payloads
+# List all 55 available payloads
 barzakh-adversary list
 
 # Generate payloads for a specific architecture
@@ -151,7 +178,7 @@ barzakh-scanner-rs/
     │   │   ├── scanner.rs        # Scan orchestration
     │   │   ├── baseline.rs       # Baseline configuration
     │   │   ├── detector.rs       # Detector trait + types
-    │   │   ├── detectors/        # 43 detection modules
+    │   │   ├── detectors/        # 60 detection modules
     │   │   └── reports/          # HTML/JSON/Markdown reports
     │   └── tests/
     │       └── scanner_integration.rs
@@ -162,7 +189,7 @@ barzakh-scanner-rs/
     └── barzakh-adversary/        # Red-team payload generator
         ├── src/
         │   ├── lib.rs            # Payload trait + public API
-        │   ├── payloads/         # 33 payload generators
+        │   ├── payloads/         # 55 payload generators
         │   ├── validate/         # Scanner invocation + result comparison
         │   ├── corpus.rs         # Malicious/clean pair generator
         │   └── deploy/           # ESP image builder + QEMU orchestration (WIP)

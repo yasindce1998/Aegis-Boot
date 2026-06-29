@@ -50,7 +50,7 @@ sequenceDiagram
 │  and validates scanner coverage in a closed loop.                     │
 ├───────────────────────────────────────────────────────────────────────┤
 │  Layer 3: Rust Scanner (barzakh-core + barzakh-cli)                   │
-│  Defense engine with 43 detectors (x86_64, ARM, RISC-V) that         │
+│  Defense engine with 60 detectors (x86_64, ARM, RISC-V) that         │
 │  analyzes memory dumps and firmware images for bootkit artifacts.     │
 └───────────────────────────────────────────────────────────────────────┘
 

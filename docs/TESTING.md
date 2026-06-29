@@ -128,7 +128,7 @@ cargo test -p barzakh-adversary
 cargo test -p barzakh-adversary -- --ignored corpus_validation
 
 # Or use the standalone binary for manual testing:
-barzakh-adversary list                        # Show all 33 payloads
+barzakh-adversary list                        # Show all 55 payloads
 barzakh-adversary generate --arch x86_64      # Generate payloads
 barzakh-adversary corpus --output ./corpus    # Generate paired corpus
 barzakh-adversary validate --corpus ./corpus  # Measure detection rates

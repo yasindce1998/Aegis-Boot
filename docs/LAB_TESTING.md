@@ -689,7 +689,7 @@ sudo python chipsec_util.py msr 0x13A  # IA32_FEATURE_CONTROL (Boot Guard)
 ### barzakh-adversary — Red-Team Payload Generator
 
 ```bash
-# List all 33 available payloads
+# List all 55 available payloads
 ./target/release/barzakh-adversary list
 
 # Generate payloads for your target architecture

@@ -11,6 +11,7 @@ pub mod boot_guard;
 pub mod capsule_update;
 pub mod confidential_vm;
 pub mod cxl_device;
+pub mod debug_interface;
 pub mod differ;
 pub mod dxe_dispatcher;
 pub mod entropy;
@@ -28,6 +29,7 @@ pub mod mbr;
 pub mod me_dma;
 pub mod me_spi;
 pub mod memory;
+pub mod microcode_injection;
 pub mod nvram_entropy;
 pub mod opensbi;
 pub mod optionrom;
@@ -39,6 +41,7 @@ pub mod pixiefail;
 pub mod pluton;
 pub mod pmp_bypass;
 pub mod reloader;
+pub mod rowhammer;
 pub mod runtime;
 pub mod s3_bootscript;
 pub mod sbat;
@@ -47,11 +50,14 @@ pub mod secureboot_chain;
 pub mod self_erasure;
 pub mod smm;
 pub mod smm_timing;
+pub mod spectre_gadgets;
 pub mod spi_integrity;
 pub mod spi_region;
 pub mod symexec;
+pub mod thermal_covert;
 pub mod timetravel;
 pub mod tpm_command;
+pub mod voltage_glitch;
 pub mod wifi_dxe;
 
 use crate::baseline::Baseline;
@@ -113,5 +119,11 @@ pub fn create_all_detectors(baseline: Option<Baseline>) -> Vec<Box<dyn Detector>
         Box::new(arm_tbbr::ArmTbbrDetector::new()),
         Box::new(wifi_dxe::WifiDxeDetector::new()),
         Box::new(pluton::PlutonDetector::new()),
+        Box::new(microcode_injection::MicrocodeInjectionDetector::new()),
+        Box::new(spectre_gadgets::SpectreGadgetsDetector::new()),
+        Box::new(thermal_covert::ThermalCovertDetector::new()),
+        Box::new(voltage_glitch::VoltageGlitchDetector::new()),
+        Box::new(debug_interface::DebugInterfaceDetector::new()),
+        Box::new(rowhammer::RowhammerDetector::new()),
     ]
 }

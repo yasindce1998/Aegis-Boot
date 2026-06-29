@@ -57,7 +57,7 @@
 
   <!-- ═══════════ DEFENSE GROUP (right) ═══════════ -->
   <rect x="610" y="50" width="260" height="310" rx="10" fill="rgba(0,255,136,0.06)" stroke="#00ff88" stroke-width="1.5" filter="url(#glow-green)"/>
-  <text x="740" y="74" text-anchor="middle" fill="#00ff88" font-size="13" font-weight="bold">🛡️  DEFENSE — 30 Detectors</text>
+  <text x="740" y="74" text-anchor="middle" fill="#00ff88" font-size="13" font-weight="bold">🛡️  DEFENSE — 60 Detectors</text>
 
   <!-- Defense items -->
   <rect x="630" y="90" width="220" height="34" rx="6" fill="rgba(0,255,136,0.1)" stroke="#00ff88" stroke-width="0.8"/>
@@ -80,7 +80,7 @@
 
   <!-- ═══════════ ADVERSARY GROUP (bottom center) ═══════════ -->
   <rect x="300" y="390" width="300" height="110" rx="10" fill="rgba(255,0,170,0.06)" stroke="#ff00aa" stroke-width="1.5" filter="url(#glow-magenta)"/>
-  <text x="450" y="414" text-anchor="middle" fill="#ff00aa" font-size="13" font-weight="bold">🎯  ADVERSARY — 17 Payloads</text>
+  <text x="450" y="414" text-anchor="middle" fill="#ff00aa" font-size="13" font-weight="bold">🎯  ADVERSARY — 55 Payloads</text>
 
   <rect x="315" y="428" width="130" height="30" rx="6" fill="rgba(255,0,170,0.1)" stroke="#ff00aa" stroke-width="0.8"/>
   <text x="380" y="448" text-anchor="middle" fill="#e6edf3" font-size="10">Payload Generators</text>

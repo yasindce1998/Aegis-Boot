@@ -523,6 +523,7 @@ fn cmd_info() -> Result<()> {
     println!("    • Secure Boot chain (SecureBoot, SecureBoot Chain, Differ)");
     println!("    • Behavioral analysis (Entropy, Self-Erasure, Time Travel)");
     println!("    • Intel ME/Ring -3 (HECI, ME SPI, AMT, fTPM, ME DMA)");
+    println!("    • Ring -4/Microarch (Microcode, Spectre, Thermal, Voltage, Debug, Rowhammer)");
     println!();
 
     Ok(())
