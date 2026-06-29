@@ -1,0 +1,108 @@
+name: Release Binaries
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+            binary: barzakh-scanner-linux-x86_64
+            cross: false
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04
+            binary: barzakh-scanner-linux-aarch64
+            cross: true
+          - target: x86_64-apple-darwin
+            runner: macos-latest
+            binary: barzakh-scanner-macos-x86_64
+            cross: false
+          - target: aarch64-apple-darwin
+            runner: macos-latest
+            binary: barzakh-scanner-macos-aarch64
+            cross: false
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest
+            binary: barzakh-scanner-windows-x86_64.exe
+            cross: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross (Linux ARM64)
+        if: matrix.cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src/barzakh-scanner-rs
+
+      - name: Build (native)
+        if: ${{ !matrix.cross }}
+        working-directory: src/barzakh-scanner-rs
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Build (cross)
+        if: matrix.cross
+        working-directory: src/barzakh-scanner-rs
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Rename binary (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cp src/barzakh-scanner-rs/target/${{ matrix.target }}/release/barzakh-scanner \
+             ${{ matrix.binary }}
+
+      - name: Rename binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Copy-Item "src\barzakh-scanner-rs\target\${{ matrix.target }}\release\barzakh-scanner.exe" `
+                    "${{ matrix.binary }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.binary }}
+          path: ${{ matrix.binary }}
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          find artifacts -type f -exec cp {} release/ \;
+          cd release
+          sha256sum * > sha256sums.txt
+          cat sha256sums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release/*
