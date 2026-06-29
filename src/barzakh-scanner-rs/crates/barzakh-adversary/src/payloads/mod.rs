@@ -4,6 +4,7 @@ pub mod arm_iboot;
 pub mod arm_scm;
 pub mod arm_tbbr_bypass;
 pub mod arm_trustzone;
+pub mod asus_nvram_redirect;
 pub mod auth_var_rollback;
 pub mod blacklotus_mok;
 pub mod bmc_spi_lateral;
@@ -13,6 +14,7 @@ pub mod bootkitty_grub_patch;
 pub mod capsule_tamper;
 pub mod clkscrew_voltage;
 pub mod cxl_dma_attack;
+pub mod dell_bios_connect;
 pub mod dxe_depex_hijack;
 pub mod esp_persistence;
 pub mod ftpm_forge;
@@ -20,12 +22,16 @@ pub mod fv_tamper;
 pub mod gpu_vbios_implant;
 pub mod heci_traffic;
 pub mod http_boot_mitm;
+pub mod idrac_spi_lateral;
+pub mod insyde_smm_capsule;
 pub mod jtag_dci_unlock;
 pub mod logofail_image;
+pub mod lvfs_capsule_spoof;
 pub mod me_dma_inject;
 pub mod me_spi_region;
 pub mod meltdown_pte_leak;
 pub mod microcode_malicious;
+pub mod msi_key_leak;
 pub mod nvram_capsule;
 pub mod optionrom_inject;
 pub mod pe_inject;
@@ -113,5 +119,11 @@ pub fn create_all_payloads() -> Vec<Box<dyn Payload>> {
         Box::new(clkscrew_voltage::ClkscrewVoltagePayload),
         Box::new(jtag_dci_unlock::JtagDciUnlockPayload),
         Box::new(rowhammer_trr_bypass::RowhammerTrrBypassPayload),
+        Box::new(dell_bios_connect::DellBiosConnectPayload),
+        Box::new(asus_nvram_redirect::AsusNvramRedirectPayload),
+        Box::new(msi_key_leak::MsiKeyLeakPayload),
+        Box::new(insyde_smm_capsule::InsydeSmmCapsulePayload),
+        Box::new(idrac_spi_lateral::IdracSpiLateralPayload),
+        Box::new(lvfs_capsule_spoof::LvfsCapsuleSpoofPayload),
     ]
 }

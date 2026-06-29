@@ -3,6 +3,7 @@ pub mod amd_psp;
 pub mod amt;
 pub mod arm_tbbr;
 pub mod arm_trustzone;
+pub mod asus_nvram;
 pub mod attestation;
 pub mod auth_variable;
 pub mod blacklotus;
@@ -12,6 +13,7 @@ pub mod capsule_update;
 pub mod confidential_vm;
 pub mod cxl_device;
 pub mod debug_interface;
+pub mod dell_bios_connect;
 pub mod differ;
 pub mod dxe_dispatcher;
 pub mod entropy;
@@ -22,14 +24,18 @@ pub mod ftpm;
 pub mod heci;
 pub mod hook;
 pub mod http_boot;
+pub mod idrac_spi;
+pub mod insyde_smm;
 pub mod introspection;
 pub mod linux_bootchain;
 pub mod logofail;
+pub mod lvfs_integrity;
 pub mod mbr;
 pub mod me_dma;
 pub mod me_spi;
 pub mod memory;
 pub mod microcode_injection;
+pub mod msi_key_reuse;
 pub mod nvram_entropy;
 pub mod opensbi;
 pub mod optionrom;
@@ -125,5 +131,11 @@ pub fn create_all_detectors(baseline: Option<Baseline>) -> Vec<Box<dyn Detector>
         Box::new(voltage_glitch::VoltageGlitchDetector::new()),
         Box::new(debug_interface::DebugInterfaceDetector::new()),
         Box::new(rowhammer::RowhammerDetector::new()),
+        Box::new(dell_bios_connect::DellBiosConnectDetector::new()),
+        Box::new(asus_nvram::AsusNvramDetector::new()),
+        Box::new(msi_key_reuse::MsiKeyReuseDetector::new()),
+        Box::new(insyde_smm::InsydeSmmDetector::new()),
+        Box::new(idrac_spi::IdracSpiDetector::new()),
+        Box::new(lvfs_integrity::LvfsIntegrityDetector::new()),
     ]
 }
