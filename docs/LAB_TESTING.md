@@ -163,6 +163,411 @@ chmod +x recover.sh
 
 ---
 
+## 🔒 Kill-Switch Mechanisms — Detailed Architecture
+
+The Barzakh bootkit implements a **fail-closed, sequential kill-switch chain** at DXE driver entry. Every time the DXE module loads, `ValidateKillSwitches()` executes a series of hardware-bound and time-bound checks. If **any single check fails**, the module immediately returns `EFI_ABORTED` and the payload never executes.
+
+This is not a software flag — it is a hard architectural gate enforced before any hooking, injection, or persistence logic runs.
+
+---
+
+### Kill-Switch Validation Flow
+
+```
+DXE Driver Entry Point
+       │
+       ▼
+┌─────────────────────────┐
+│  ValidateKillSwitches() │  ← Master orchestrator (KillSwitch.c:40-79)
+└────────────┬────────────┘
+             │
+    ┌────────▼────────┐     FAIL → EFI_ABORTED (KillSwitchUuidMismatch)
+    │ 1. UUID Binding │
+    └────────┬────────┘
+             │ PASS
+    ┌────────▼────────┐     FAIL → EFI_ABORTED (KillSwitchTpmMismatch)
+    │ 2. TPM EK Pin   │
+    └────────┬────────┘
+             │ PASS
+    ┌────────▼────────┐     FAIL → EFI_ABORTED (KillSwitchExpired)
+    │ 3. Time-Bomb    │
+    └────────┬────────┘
+             │ PASS
+             ▼
+     Module executes normally
+```
+
+**Result Codes** (defined in `KillSwitch.h`):
+
+| Enum Value | Name | Meaning |
+|------------|------|---------|
+| 0 | `KillSwitchSuccess` | All checks passed |
+| 1 | `KillSwitchUuidMismatch` | Hardware UUID does not match allowed value |
+| 2 | `KillSwitchTpmMismatch` | TPM Endorsement Key hash mismatch |
+| 3 | `KillSwitchExpired` | Time-bomb expiry date has passed |
+| 4 | `KillSwitchError` | Internal error (protocol not found, etc.) |
+
+---
+
+### Kill Switch 1: SMBIOS UUID Hardware Binding
+
+**Source:** `src/BootkitPkg/DxeInject/KillSwitch.c` — `ValidateUuid()` (lines 88–175)
+
+**Purpose:** Ensures the bootkit only executes on a specific, pre-authorized physical machine. The module reads the system's SMBIOS Type 1 (System Information) table and compares the 16-byte UUID field against a compile-time or environment-configured allowed UUID.
+
+#### How It Works
+
+1. Locates the `EFI_SMBIOS_PROTOCOL` via `gBS->LocateProtocol()`
+2. Iterates SMBIOS tables to find Type 1 (System Information)
+3. Extracts the 16-byte UUID at the fixed offset in the Type 1 structure
+4. Parses the allowed UUID string (`BARZAKH_ALLOWED_UUID`) from `"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"` format into raw bytes via `ParseUuidString()`
+5. Performs a raw 16-byte `CompareMem()` comparison
+6. Returns `FALSE` (kill) if bytes differ
+
+#### Configuration
+
+```bash
+# Get your test machine's UUID
+sudo dmidecode -s system-uuid
+# Example output: 4C4C4544-0044-3710-8052-B5C04F385731
+
+# Set in .env or export before build
+export BARZAKH_ALLOWED_UUID="4C4C4544-0044-3710-8052-B5C04F385731"
+```
+
+**Compile-time define:** If `BARZAKH_ALLOWED_UUID` is not set, defaults to `"00000000-0000-0000-0000-000000000000"` — which will **never match** real hardware (fail-closed).
+
+#### QEMU Testing
+
+```bash
+# QEMU passes UUID via -uuid flag (handled by qemu-run.sh automatically)
+qemu-system-x86_64 ... -uuid "4C4C4544-0044-3710-8052-B5C04F385731"
+```
+
+The `scripts/qemu-run.sh` script reads `BARZAKH_ALLOWED_UUID` from the environment and passes it as the VM UUID:
+```bash
+VM_UUID="${BARZAKH_ALLOWED_UUID:-00000000-0000-0000-0000-000000000000}"
+qemu-system-x86_64 ... -uuid "$VM_UUID"
+```
+
+#### Failure Behavior
+
+- **Serial output:** `[BARZAKH] UUID validation FAILED - hardware mismatch`
+- **Return:** `KillSwitchUuidMismatch` (enum value 1)
+- **Effect:** Module aborts immediately, no further checks run
+
+#### Lab Verification Procedure
+
+```bash
+# Test 1: Matching UUID (should PASS)
+export BARZAKH_ALLOWED_UUID="$(sudo dmidecode -s system-uuid)"
+./scripts/qemu-run.sh --debug --serial-log /tmp/ks-test-pass.log
+grep "UUID validation" /tmp/ks-test-pass.log
+# Expected: [BARZAKH] UUID validation PASSED
+
+# Test 2: Mismatched UUID (should FAIL)
+export BARZAKH_ALLOWED_UUID="DEADBEEF-DEAD-BEEF-DEAD-BEEFDEADBEEF"
+./scripts/qemu-run.sh --debug --serial-log /tmp/ks-test-fail.log
+grep "UUID validation" /tmp/ks-test-fail.log
+# Expected: [BARZAKH] UUID validation FAILED - hardware mismatch
+
+# Test 3: Default/unset UUID (should FAIL on real hardware)
+unset BARZAKH_ALLOWED_UUID
+./scripts/qemu-run.sh --debug --serial-log /tmp/ks-test-default.log
+grep "UUID validation" /tmp/ks-test-default.log
+# Expected: FAILED (00000000-... never matches real HW)
+```
+
+---
+
+### Kill Switch 2: TPM Endorsement Key Pinning
+
+**Source:** `src/BootkitPkg/DxeInject/TpmKillSwitch.c` — `ValidateTpmEndorsementKey()` (lines 80–135)
+
+**Purpose:** Cryptographically binds execution to a specific TPM chip. Each TPM has a unique, non-clonable Endorsement Key (EK) burned at manufacture. The module reads the EK via `Tpm2ReadPublic()` and compares it against an expected value.
+
+#### How It Works
+
+1. `InitializeTpmKillSwitch()` locates the `EFI_TCG2_PROTOCOL` via `gBS->LocateProtocol()`
+2. If no TCG2 protocol is found → returns `EFI_SECURITY_VIOLATION` (no TPM = no execution)
+3. `ValidateTpmEndorsementKey()` calls `Tpm2ReadPublic(TPM_RH_ENDORSEMENT, ...)` to read the actual EK
+4. Compares the actual EK size and content against `TPM_EXPECTED_EK` structure (256-byte RSA-2048 key)
+5. Returns `TpmKillSwitchEkMismatch` if size or content differs
+
+#### Advanced TPM Kill-Switches
+
+Beyond basic EK pinning, the TPM module implements two additional mechanisms:
+
+**Monotonic Counter (lines 144–187):**
+```c
+CheckTpmMonotonicCounter(ExpiryValue)
+```
+- Reads an NV-stored hardware counter via `Tpm2NvReadCounter()`
+- Counter can only increment, never reset (hardware guarantee)
+- If counter ≥ `TPM_EXPIRY_COUNTER` (default: 1,000,000), execution is killed
+- **Use case:** Limits total number of boot cycles regardless of clock manipulation
+
+**Signed Timestamp Validation (lines 198–264):**
+```c
+ValidateSignedTimestamp(Timestamp, Signature, SignatureSize)
+```
+- Verifies an RSA-SHA256 signature over a server-provided timestamp
+- Uses `BARZAKH_SERVER_PUBLIC_KEY` (RSA-2048, defined in `TpmKillSwitch.h`)
+- **5-minute future tolerance:** Rejects timestamps >5 minutes in the future (clock skew protection)
+- **24-hour expiry window:** Rejects timestamps older than 24 hours
+- **Fail-closed crypto:** Without `BARZAKH_STUB_CRYPTO` defined, the `RsaVerify()` stub rejects ALL signatures
+
+#### TPM Kill-Switch Result Codes
+
+| Enum Value | Name | Meaning |
+|------------|------|---------|
+| 0 | `TpmKillSwitchSuccess` | TPM validation passed |
+| 1 | `TpmKillSwitchNoTpm` | TCG2 protocol not found |
+| 2 | `TpmKillSwitchEkMismatch` | EK does not match expected |
+| 3 | `TpmKillSwitchCounterExpired` | Monotonic counter exceeded threshold |
+| 4 | `TpmKillSwitchError` | Internal error |
+
+#### Configuration
+
+```bash
+# Read your TPM's Endorsement Key
+sudo tpm2_readpublic -c 0x81010001 -o /tmp/ek.pub
+
+# Get the SHA-256 hash for documentation
+sha256sum /tmp/ek.pub
+
+# The raw EK bytes must be compiled into TPM_EXPECTED_EK in TpmKillSwitch.h
+# See SETUP.md Section 6.4 for the full procedure
+```
+
+**Constants** (defined in `TpmKillSwitch.h`):
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `TPM_EK_SIZE` | 256 | RSA-2048 key size in bytes |
+| `TPM_EXPIRY_COUNTER` | 1,000,000 | Maximum allowed boot cycles |
+| `BARZAKH_SERVER_PUBLIC_KEY[256]` | RSA-2048 placeholder | Server's public key for timestamp verification |
+
+#### QEMU Mode Bypass
+
+When compiled with `BARZAKH_QEMU_MODE`, the TPM kill-switch has a fallback:
+
+```c
+#ifdef BARZAKH_QEMU_MODE
+    // In QEMU mode, TPM failure is non-fatal (vTPM may not be configured)
+    if (TpmResult == TpmKillSwitchNoTpm) {
+        DEBUG((DEBUG_WARN, "[BARZAKH] QEMU mode: TPM not available, bypassing\n"));
+        // Continue execution — UUID and time-bomb still enforced
+    }
+#endif
+```
+
+This allows testing without a vTPM configured, but **UUID and time-bomb checks still apply**.
+
+#### Lab Verification Procedure
+
+```bash
+# Test 1: With vTPM configured (should PASS if EK matches)
+swtpm socket --tpmstate dir=~/barzakh-workspace/vtpm-state \
+    --ctrl type=unixio,path=~/barzakh-workspace/vtpm-state/swtpm-sock \
+    --tpm2 --daemon
+./scripts/qemu-run.sh --debug --serial-log /tmp/tpm-test.log
+grep "TPM" /tmp/tpm-test.log
+# Expected: [BARZAKH] TPM EK validation PASSED
+
+# Test 2: Without vTPM (QEMU mode — should bypass with warning)
+# Build with: -D BARZAKH_QEMU_MODE
+pkill swtpm
+./scripts/qemu-run.sh --debug --serial-log /tmp/tpm-bypass.log
+grep "TPM" /tmp/tpm-bypass.log
+# Expected: [BARZAKH] QEMU mode: TPM not available, bypassing
+
+# Test 3: Without vTPM (production mode — should FAIL)
+# Build WITHOUT BARZAKH_QEMU_MODE
+pkill swtpm
+./scripts/qemu-run.sh --debug --serial-log /tmp/tpm-fail.log
+grep "TPM" /tmp/tpm-fail.log
+# Expected: [BARZAKH] TPM validation FAILED - no TCG2 protocol
+```
+
+---
+
+### Kill Switch 3: Time-Bomb Expiry
+
+**Source:** `src/BootkitPkg/DxeInject/KillSwitch.c` — `ValidateExpiry()` (lines 233–296)
+
+**Purpose:** Ensures the module self-destructs (refuses to run) after a fixed date. Even if the binary persists on flash, it becomes inert once the expiry date passes. This prevents indefinite persistence in case of a lost or stolen test machine.
+
+#### How It Works
+
+1. Calls `gRT->GetTime()` to read the system's real-time clock (RTC)
+2. Parses `BARZAKH_EXPIRY_DATE` string from `"YYYY-MM-DD"` format via `ParseDateString()`
+3. Calls `CompareDates()` to compare current date against expiry
+4. Returns `FALSE` (kill) if `current_date >= expiry_date`
+
+#### Date Comparison Logic
+
+```c
+// CompareDates returns:
+//   -1 if date1 < date2
+//    0 if date1 == date2
+//    1 if date1 > date2
+//
+// ValidateExpiry kills if CompareDates(current, expiry) >= 0
+// i.e., expiry date has arrived or passed
+```
+
+#### Configuration
+
+```bash
+# Set expiry date (must be YYYY-MM-DD format)
+export BARZAKH_EXPIRY_DATE="2027-12-31"
+
+# This becomes a compile-time define passed to the UEFI build:
+# -D BARZAKH_EXPIRY_DATE="2027-12-31"
+```
+
+**Default:** If `BARZAKH_EXPIRY_DATE` is not set, defaults to `"2027-12-31"`.
+
+#### Failure Behavior
+
+- **Serial output:** `[BARZAKH] Expiry validation FAILED - module expired`
+- **Return:** `KillSwitchExpired` (enum value 3)
+- **Effect:** Module aborts, payload never executes
+
+#### Important Notes
+
+- **RTC dependency:** This relies on the system's real-time clock. An attacker with physical access could set the BIOS clock backward. However, the TPM monotonic counter (Kill Switch 2) provides a secondary bound that is immune to clock manipulation.
+- **Granularity:** Date-level only (no hours/minutes). The module expires at the start of the expiry day.
+- **No network required:** The check is purely local RTC — works in air-gapped environments.
+
+#### Lab Verification Procedure
+
+```bash
+# Test 1: Current date before expiry (should PASS)
+export BARZAKH_EXPIRY_DATE="2030-12-31"
+./scripts/qemu-run.sh --debug --serial-log /tmp/expiry-pass.log
+grep "Expiry" /tmp/expiry-pass.log
+# Expected: [BARZAKH] Expiry validation PASSED
+
+# Test 2: Expired date (should FAIL)
+export BARZAKH_EXPIRY_DATE="2020-01-01"
+./scripts/qemu-run.sh --debug --serial-log /tmp/expiry-fail.log
+grep "Expiry" /tmp/expiry-fail.log
+# Expected: [BARZAKH] Expiry validation FAILED - module expired
+
+# Test 3: Expiry today (should FAIL — "on or after" semantics)
+export BARZAKH_EXPIRY_DATE="$(date +%Y-%m-%d)"
+./scripts/qemu-run.sh --debug --serial-log /tmp/expiry-today.log
+grep "Expiry" /tmp/expiry-today.log
+# Expected: [BARZAKH] Expiry validation FAILED - module expired
+```
+
+---
+
+### Kill Switch 4: Air-Gap Enforcement
+
+**Purpose:** Detects the presence of network interfaces at DXE phase and refuses execution if networking hardware is active. This enforces the air-gap requirement at the firmware level — even if an operator forgets to physically disconnect the cable.
+
+#### How It Works
+
+- Enumerates PCI devices looking for network controller class codes (Class 02h)
+- If any network interface is found in an enabled/active state, the kill-switch fires
+- Operates at DXE phase before any OS-level network stack loads
+
+#### Configuration
+
+Network enforcement is always-on when compiled without `BARZAKH_QEMU_MODE`. In QEMU mode, the `--no-network` flag (default in `qemu-run.sh`) ensures no virtual NIC is attached to the VM.
+
+#### Lab Verification Procedure
+
+```bash
+# Test 1: No network device (should PASS)
+./scripts/qemu-run.sh --no-network --debug --serial-log /tmp/airgap-pass.log
+grep -i "network\|air.gap" /tmp/airgap-pass.log
+# Expected: No network-related kill-switch failure
+
+# Test 2: With network device attached (may trigger depending on build)
+# WARNING: Only test this in QEMU, never on physical hardware in production
+qemu-system-x86_64 ... -netdev user,id=net0 -device virtio-net-pci,netdev=net0
+# Check serial log for air-gap violation message
+```
+
+---
+
+### Kill Switch 5: SIMULATION_MODE Flag
+
+**Purpose:** A global runtime flag that prevents any real hardware operations. When `SIMULATION_MODE` is active, all DXE operations become no-ops — no hooking, no persistence writes, no SPI flash operations.
+
+#### How It Works
+
+- `SIMULATION_MODE` is checked at the top of each hardware-modifying function
+- If set, functions return success immediately without performing the operation
+- Allows running the full DXE module logic path for testing while guaranteeing zero hardware modification
+
+#### When SIMULATION_MODE Is Active
+
+| Operation | Behavior |
+|-----------|----------|
+| SPI flash writes | Skipped (logged) |
+| MSR hooking | Skipped (logged) |
+| ExitBootServices hook | Skipped (logged) |
+| NVRAM variable writes | Skipped (logged) |
+| Serial debug output | Still active (read-only) |
+
+#### Lab Verification Procedure
+
+```bash
+# Build with SIMULATION_MODE enabled
+# Then run normally — check serial output confirms no-op behavior
+./scripts/qemu-run.sh --debug --serial-log /tmp/sim-mode.log
+grep "SIMULATION" /tmp/sim-mode.log
+# Expected: [BARZAKH] SIMULATION_MODE active - hardware ops disabled
+```
+
+---
+
+### Compile-Time Flags Summary
+
+| Flag | Effect | Default |
+|------|--------|---------|
+| `BARZAKH_ALLOWED_UUID` | 36-char UUID string for hardware binding | `"00000000-0000-0000-0000-000000000000"` (never matches) |
+| `BARZAKH_EXPIRY_DATE` | `"YYYY-MM-DD"` expiry date | `"2027-12-31"` |
+| `BARZAKH_QEMU_MODE` | Allows TPM bypass, relaxes air-gap check | Not defined (strict mode) |
+| `BARZAKH_STUB_CRYPTO` | Enables stub RSA verification (testing only) | Not defined (fail-closed) |
+| `SIMULATION_MODE` | Disables all hardware operations | Not defined (live mode) |
+
+---
+
+### Environment Variables for Lab Configuration
+
+| Variable | Purpose | How to Obtain |
+|----------|---------|---------------|
+| `BARZAKH_ALLOWED_UUID` | Machine UUID for binding | `sudo dmidecode -s system-uuid` |
+| `BARZAKH_EXPIRY_DATE` | Project expiry date | Set per institutional policy |
+| `PROJECT_START_DATE` | Audit trail reference | Set at project initiation |
+
+---
+
+### Kill-Switch Testing Checklist
+
+Before proceeding to any live testing phase, verify each kill-switch independently:
+
+- [ ] **UUID Kill-Switch:** Confirmed module aborts with mismatched UUID
+- [ ] **UUID Kill-Switch:** Confirmed module passes with correct UUID
+- [ ] **TPM Kill-Switch:** Confirmed module aborts without TPM (production build)
+- [ ] **TPM Kill-Switch:** Confirmed QEMU bypass works (QEMU build)
+- [ ] **Time-Bomb:** Confirmed module aborts with past expiry date
+- [ ] **Time-Bomb:** Confirmed module passes with future expiry date
+- [ ] **Air-Gap:** Confirmed no network interfaces attached in test VM
+- [ ] **SIMULATION_MODE:** Confirmed no hardware writes occur when enabled
+- [ ] **Fail-Closed Default:** Confirmed module aborts with all-zeros UUID (unconfigured state)
+- [ ] **Serial Logging:** Confirmed all kill-switch results appear in serial output
+
+**⚠️ CRITICAL:** Never proceed to Phase 3+ testing without completing this checklist. The kill-switches are your primary safety mechanism against uncontrolled execution.
+
+---
+
 ## 🧪 Test Progression
 
 ### Phase 1: Non-Destructive Firmware Analysis
