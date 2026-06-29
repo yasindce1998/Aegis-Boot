@@ -1,5 +1,14 @@
 pub mod acpi_backdoor;
 pub mod amt_sol;
+pub mod android_bootconfig_inject;
+pub mod android_bootctrl_poison;
+pub mod android_bt_forge;
+pub mod android_dice_forge;
+pub mod android_dlkm_inject;
+pub mod android_gki_tamper;
+pub mod android_pkvm_escape;
+pub mod android_rkp_spoof;
+pub mod android_trusty_tamper;
 pub mod arm_iboot;
 pub mod arm_scm;
 pub mod arm_tbbr_bypass;
@@ -125,5 +134,14 @@ pub fn create_all_payloads() -> Vec<Box<dyn Payload>> {
         Box::new(insyde_smm_capsule::InsydeSmmCapsulePayload),
         Box::new(idrac_spi_lateral::IdracSpiLateralPayload),
         Box::new(lvfs_capsule_spoof::LvfsCapsuleSpoofPayload),
+        Box::new(android_pkvm_escape::AndroidPkvmEscapePayload),
+        Box::new(android_dice_forge::AndroidDiceForgePayload),
+        Box::new(android_gki_tamper::AndroidGkiTamperPayload),
+        Box::new(android_rkp_spoof::AndroidRkpSpoofPayload),
+        Box::new(android_bt_forge::AndroidBtForgePayload),
+        Box::new(android_trusty_tamper::AndroidTrustyTamperPayload),
+        Box::new(android_bootctrl_poison::AndroidBootctrlPoisonPayload),
+        Box::new(android_dlkm_inject::AndroidDlkmInjectPayload),
+        Box::new(android_bootconfig_inject::AndroidBootconfigInjectPayload),
     ]
 }

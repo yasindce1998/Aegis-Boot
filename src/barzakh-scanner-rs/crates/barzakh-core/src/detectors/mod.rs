@@ -1,6 +1,15 @@
 pub mod acpi_integrity;
 pub mod amd_psp;
 pub mod amt;
+pub mod android_binary_transparency;
+pub mod android_bootconfig;
+pub mod android_bootctrl;
+pub mod android_dice;
+pub mod android_gki_boot;
+pub mod android_pkvm;
+pub mod android_rkp;
+pub mod android_trusty;
+pub mod android_vendor_dlkm;
 pub mod arm_tbbr;
 pub mod arm_trustzone;
 pub mod asus_nvram;
@@ -137,5 +146,14 @@ pub fn create_all_detectors(baseline: Option<Baseline>) -> Vec<Box<dyn Detector>
         Box::new(insyde_smm::InsydeSmmDetector::new()),
         Box::new(idrac_spi::IdracSpiDetector::new()),
         Box::new(lvfs_integrity::LvfsIntegrityDetector::new()),
+        Box::new(android_pkvm::AndroidPkvmDetector::new()),
+        Box::new(android_dice::AndroidDiceDetector::new()),
+        Box::new(android_gki_boot::AndroidGkiBootDetector::new()),
+        Box::new(android_rkp::AndroidRkpDetector::new()),
+        Box::new(android_binary_transparency::AndroidBinaryTransparencyDetector::new()),
+        Box::new(android_trusty::AndroidTrustyDetector::new()),
+        Box::new(android_bootctrl::AndroidBootctrlDetector::new()),
+        Box::new(android_vendor_dlkm::AndroidVendorDlkmDetector::new()),
+        Box::new(android_bootconfig::AndroidBootconfigDetector::new()),
     ]
 }
