@@ -6,7 +6,7 @@
 
 **The most comprehensive open-source UEFI firmware security research platform**
 
-*Offense emulation from Ring 0 to Ring -4 | 75 detection engines | Closed-loop adversary validation*
+*Offense emulation from Ring 0 to Ring -4 | 89 detection engines | Closed-loop adversary validation*
 
 [![CI](https://github.com/yasindce1998/Barzakh/actions/workflows/barzakh-ci.yml/badge.svg)](https://github.com/yasindce1998/Barzakh/actions/workflows/barzakh-ci.yml)
 [![Rust](https://img.shields.io/badge/Rust-stable-orange)](src/barzakh-scanner-rs/)
@@ -29,8 +29,8 @@ Barzakh is a full-stack firmware security research platform that models real-wor
 
 **Key capabilities:**
 - **31 offense modules** spanning x86_64, AArch64/Apple Silicon, and RISC-V architectures
-- **75 specialized detectors** with firmware-specific heuristics and structural analysis (including 9 Android boot chain detectors)
-- **64 adversary payload generators** for automated true-positive validation
+- **89 specialized detectors** with firmware-specific heuristics and structural analysis (spanning UEFI, Intel/AMD, ARM, RISC-V, Android, Apple/iOS, and wireless firmware)
+- **78 adversary payload generators** for automated true-positive validation
 - **Full Ring -4 coverage** — CPU microcode, speculative execution, thermal/power covert channels, voltage glitching, debug interfaces, rowhammer
 - **Hardware lab testing path** — documented progression from simulation to real silicon
 
@@ -122,7 +122,7 @@ All offense modules ship with `SIMULATION_MODE = TRUE` — they model behavior w
 
 ### 2. Barzakh Scanner — Detection Engine (Rust)
 
-**75 specialized detectors** organized by attack surface:
+**89 specialized detectors** organized by attack surface:
 
 <details>
 <summary><b>Full Detector List</b></summary>
@@ -205,6 +205,20 @@ All offense modules ship with `SIMULATION_MODE = TRUE` — they model behavior w
 | 73 | `android_bootctrl` | Android | Boot Control HAL — A/B slot poisoning, retry exhaustion |
 | 74 | `android_vendor_dlkm` | Android | vendor_dlkm — unsigned kernel module injection via EROFS |
 | 75 | `android_bootconfig` | Android | Bootconfig parameter injection — init override, SELinux disable |
+| 76 | `iommu_dmar` | DMA/IOMMU | VT-d DMAR / AMD IVRS stripped of DRHD/IVHD units — pre-boot DMA exposure (Thunderspy/PCILeech) |
+| 77 | `secureboot_dbx` | Secure Boot | dbx revocation list emptied/rolled back — re-enables revoked loaders (BlackLotus-class) |
+| 78 | `apple_img4` | Apple | Img4/IM4M manifest with CPRO/CSEC disabled or zeroed boot nonce — permissive SEP boot policy |
+| 79 | `windows_bootchain` | Windows | BCD nointegritychecks/testsigning, missing ELAM — unsigned boot-driver loading |
+| 80 | `android_avb` | Android | Verified Boot vbmeta VERIFICATION/HASHTREE disabled + rollback-index reset |
+| 81 | `android_fastboot` | Android | Bootloader unlocked/unlockable — unsigned image flashing |
+| 82 | `android_keymint` | Android | Key attestation downgraded to SOFTWARE level / Unverified boot state |
+| 83 | `wifi_firmware` | Wireless | WLAN controller firmware (brcmfmac) with injected code stub past signed image |
+| 84 | `network_boot` | Network | iPXE boot script chainloads an external attacker-controlled image (PXE redirect) |
+| 85 | `bluetooth_firmware` | Wireless | BT controller patchram Write_RAM/Launch_RAM implant (Broadcom/Cypress) |
+| 86 | `ios_trustcache` | iOS | Injected AMFI Trust Cache authorizes ad-hoc cdhash — unsigned code execution |
+| 87 | `ios_amfi` | iOS | Code-signing enforcement disabled via boot-args (amfi_get_out_of_my_way / cs_enforcement_disable) |
+| 88 | `ios_ktrr` | iOS | KTRR/CTRR (AMCC) kernel-text lockdown not engaged — kernel patch protection bypass |
+| 89 | `ios_sep_downgrade` | iOS | Secure Enclave personalization nonce zeroed — replayable APTicket / SEP downgrade |
 
 </details>
 
@@ -215,13 +229,13 @@ All offense modules ship with `SIMULATION_MODE = TRUE` — they model behavior w
 | True Positive Rate | ≥ 85% | Validated via adversary corpus |
 | False Positive Rate | < 5% | Measured against clean firmware baselines |
 | ROC-AUC | ≥ 0.92 | Aggregated across all detector categories |
-| Scan Latency | < 500ms | Per-image, full 75-detector sweep |
+| Scan Latency | < 500ms | Per-image, full 89-detector sweep |
 
 ---
 
 ### 3. Barzakh Adversary — Red-Team Payload Generator (Rust)
 
-**Standalone binary: `barzakh-adversary`** | **64 payload generators** that produce realistic tampered firmware images for detection validation:
+**Standalone binary: `barzakh-adversary`** | **78 payload generators** that produce realistic tampered firmware images for detection validation:
 
 ```bash
 # Standalone CLI commands (no cargo required — use the release binary)
@@ -379,9 +393,9 @@ barzakh/
 │   │   ├── TpmAttestation/         # PCR monitoring
 │   │   └── EventLogExtractor/      # TCG event log parsing
 │   └── barzakh-scanner-rs/         # Rust workspace
-│       ├── crates/barzakh-core/    # Detection engine (75 detectors)
+│       ├── crates/barzakh-core/    # Detection engine (89 detectors)
 │       ├── crates/barzakh-cli/     # CLI binaries (barzakh-scanner + barzakh-adversary)
-│       └── crates/barzakh-adversary/ # Red-team library (64 payload generators)
+│       └── crates/barzakh-adversary/ # Red-team library (78 payload generators)
 ├── scripts/
 │   ├── build.sh                    # EDK II compilation
 │   ├── qemu-run.sh                 # QEMU test harness with vTPM
@@ -455,7 +469,7 @@ cargo build --release
 ### 4. Scan Firmware
 
 ```bash
-# Scan a firmware dump with all 75 detectors
+# Scan a firmware dump with all 89 detectors
 ./target/release/barzakh-scanner --target /path/to/firmware.bin --report --format html --output report.html
 
 # Compare against a known-good baseline
@@ -475,7 +489,7 @@ cargo test -p barzakh-adversary
 cargo test -p barzakh-adversary -- --ignored corpus_validation
 
 # Or use the standalone barzakh-adversary CLI
-./target/release/barzakh-adversary list                    # List all 64 payloads
+./target/release/barzakh-adversary list                    # List all 78 payloads
 ./target/release/barzakh-adversary generate --arch x86_64  # Generate payloads
 ./target/release/barzakh-adversary corpus --output ./corpus # Generate test corpus
 ./target/release/barzakh-adversary validate --corpus ./corpus # Validate detection rates
@@ -488,7 +502,7 @@ cargo test -p barzakh-adversary -- --ignored corpus_validation
 ```bash
 cd src/barzakh-scanner-rs
 
-# Unit + integration tests (75 detectors, 64 payloads)
+# Unit + integration tests (89 detectors, 78 payloads)
 cargo test
 
 # Adversary red-team tests

@@ -1,21 +1,26 @@
 pub mod acpi_integrity;
 pub mod amd_psp;
 pub mod amt;
+pub mod android_avb;
 pub mod android_binary_transparency;
 pub mod android_bootconfig;
 pub mod android_bootctrl;
 pub mod android_dice;
+pub mod android_fastboot;
 pub mod android_gki_boot;
+pub mod android_keymint;
 pub mod android_pkvm;
 pub mod android_rkp;
 pub mod android_trusty;
 pub mod android_vendor_dlkm;
+pub mod apple_img4;
 pub mod arm_tbbr;
 pub mod arm_trustzone;
 pub mod asus_nvram;
 pub mod attestation;
 pub mod auth_variable;
 pub mod blacklotus;
+pub mod bluetooth_firmware;
 pub mod bmc_spi;
 pub mod boot_guard;
 pub mod capsule_update;
@@ -36,6 +41,11 @@ pub mod http_boot;
 pub mod idrac_spi;
 pub mod insyde_smm;
 pub mod introspection;
+pub mod iommu_dmar;
+pub mod ios_amfi;
+pub mod ios_ktrr;
+pub mod ios_sep_downgrade;
+pub mod ios_trustcache;
 pub mod linux_bootchain;
 pub mod logofail;
 pub mod lvfs_integrity;
@@ -45,6 +55,7 @@ pub mod me_spi;
 pub mod memory;
 pub mod microcode_injection;
 pub mod msi_key_reuse;
+pub mod network_boot;
 pub mod nvram_entropy;
 pub mod opensbi;
 pub mod optionrom;
@@ -62,6 +73,7 @@ pub mod s3_bootscript;
 pub mod sbat;
 pub mod secureboot;
 pub mod secureboot_chain;
+pub mod secureboot_dbx;
 pub mod self_erasure;
 pub mod smm;
 pub mod smm_timing;
@@ -74,6 +86,8 @@ pub mod timetravel;
 pub mod tpm_command;
 pub mod voltage_glitch;
 pub mod wifi_dxe;
+pub mod wifi_firmware;
+pub mod windows_bootchain;
 
 use crate::baseline::Baseline;
 use crate::detector::Detector;
@@ -155,5 +169,19 @@ pub fn create_all_detectors(baseline: Option<Baseline>) -> Vec<Box<dyn Detector>
         Box::new(android_bootctrl::AndroidBootctrlDetector::new()),
         Box::new(android_vendor_dlkm::AndroidVendorDlkmDetector::new()),
         Box::new(android_bootconfig::AndroidBootconfigDetector::new()),
+        Box::new(iommu_dmar::IommuDmarDetector::new()),
+        Box::new(secureboot_dbx::SecurebootDbxDetector::new()),
+        Box::new(apple_img4::AppleImg4Detector::new()),
+        Box::new(windows_bootchain::WindowsBootchainDetector::new()),
+        Box::new(android_avb::AndroidAvbDetector::new()),
+        Box::new(android_fastboot::AndroidFastbootDetector::new()),
+        Box::new(android_keymint::AndroidKeymintDetector::new()),
+        Box::new(wifi_firmware::WifiFirmwareDetector::new()),
+        Box::new(network_boot::NetworkBootDetector::new()),
+        Box::new(bluetooth_firmware::BluetoothFirmwareDetector::new()),
+        Box::new(ios_trustcache::IosTrustcacheDetector::new()),
+        Box::new(ios_amfi::IosAmfiDetector::new()),
+        Box::new(ios_ktrr::IosKtrrDetector::new()),
+        Box::new(ios_sep_downgrade::IosSepDowngradeDetector::new()),
     ]
 }

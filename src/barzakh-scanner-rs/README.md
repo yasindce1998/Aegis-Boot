@@ -2,7 +2,7 @@
 
 High-performance UEFI bootkit detection engine written in Rust.
 
-Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to detect bootkit artifacts with high accuracy and minimal false positives. It implements 75 specialized detectors covering the full spectrum of firmware-level threats across x86_64, AArch64, RISC-V, and Android architectures — from Ring 0 (UEFI DXE) down through Ring -4 (CPU microarchitecture), plus mobile boot chain attacks.
+Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to detect bootkit artifacts with high accuracy and minimal false positives. It implements 89 specialized detectors covering the full spectrum of firmware-level threats across x86_64, AArch64, RISC-V, Android, and Apple/iOS architectures — from Ring 0 (UEFI DXE) down through Ring -4 (CPU microarchitecture), plus mobile boot chain attacks.
 
 ## Detection Capabilities
 
@@ -178,7 +178,7 @@ barzakh-scanner-rs/
     │   │   ├── scanner.rs        # Scan orchestration
     │   │   ├── baseline.rs       # Baseline configuration
     │   │   ├── detector.rs       # Detector trait + types
-    │   │   ├── detectors/        # 75 detection modules
+    │   │   ├── detectors/        # 89 detection modules
     │   │   └── reports/          # HTML/JSON/Markdown reports
     │   └── tests/
     │       └── scanner_integration.rs
@@ -189,7 +189,7 @@ barzakh-scanner-rs/
     └── barzakh-adversary/        # Red-team payload generator
         ├── src/
         │   ├── lib.rs            # Payload trait + public API
-        │   ├── payloads/         # 64 payload generators
+        │   ├── payloads/         # 78 payload generators
         │   ├── validate/         # Scanner invocation + result comparison
         │   ├── corpus.rs         # Malicious/clean pair generator
         │   └── deploy/           # ESP image builder + QEMU orchestration (WIP)

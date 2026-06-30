@@ -1,14 +1,19 @@
 pub mod acpi_backdoor;
+pub mod amfi_bypass;
 pub mod amt_sol;
+pub mod android_avb_rollback;
 pub mod android_bootconfig_inject;
 pub mod android_bootctrl_poison;
 pub mod android_bt_forge;
 pub mod android_dice_forge;
 pub mod android_dlkm_inject;
+pub mod android_fastboot_unlock;
 pub mod android_gki_tamper;
+pub mod android_keymint_downgrade;
 pub mod android_pkvm_escape;
 pub mod android_rkp_spoof;
 pub mod android_trusty_tamper;
+pub mod apple_img4_downgrade;
 pub mod arm_iboot;
 pub mod arm_scm;
 pub mod arm_tbbr_bypass;
@@ -20,10 +25,13 @@ pub mod bmc_spi_lateral;
 pub mod boot_guard_bypass;
 pub mod boot_services_hook;
 pub mod bootkitty_grub_patch;
+pub mod bt_firmware_implant;
 pub mod capsule_tamper;
 pub mod clkscrew_voltage;
 pub mod cxl_dma_attack;
+pub mod dbx_rollback;
 pub mod dell_bios_connect;
+pub mod dmar_neuter;
 pub mod dxe_depex_hijack;
 pub mod esp_persistence;
 pub mod ftpm_forge;
@@ -34,6 +42,7 @@ pub mod http_boot_mitm;
 pub mod idrac_spi_lateral;
 pub mod insyde_smm_capsule;
 pub mod jtag_dci_unlock;
+pub mod ktrr_disable;
 pub mod logofail_image;
 pub mod lvfs_capsule_spoof;
 pub mod me_dma_inject;
@@ -41,6 +50,7 @@ pub mod me_spi_region;
 pub mod meltdown_pte_leak;
 pub mod microcode_malicious;
 pub mod msi_key_leak;
+pub mod network_boot_redirect;
 pub mod nvram_capsule;
 pub mod optionrom_inject;
 pub mod pe_inject;
@@ -58,6 +68,7 @@ pub mod s3_bootscript_inject;
 pub mod sbat_rollback;
 pub mod secureboot_bypass;
 pub mod secureboot_reloader;
+pub mod sep_downgrade;
 pub mod sev_snp_vmpl_escape;
 pub mod signature_plant;
 pub mod smm_timing_anomaly;
@@ -67,7 +78,10 @@ pub mod tdx_ovmf_inject;
 pub mod thermal_rapl_exfil;
 pub mod tpm_ref_overflow;
 pub mod trampoline;
+pub mod trustcache_inject;
 pub mod wifi_dxe_inject;
+pub mod wifi_firmware_implant;
+pub mod windows_bcd_tamper;
 
 use crate::Payload;
 
@@ -143,5 +157,19 @@ pub fn create_all_payloads() -> Vec<Box<dyn Payload>> {
         Box::new(android_bootctrl_poison::AndroidBootctrlPoisonPayload),
         Box::new(android_dlkm_inject::AndroidDlkmInjectPayload),
         Box::new(android_bootconfig_inject::AndroidBootconfigInjectPayload),
+        Box::new(dmar_neuter::DmarNeuterPayload),
+        Box::new(dbx_rollback::DbxRollbackPayload),
+        Box::new(apple_img4_downgrade::AppleImg4DowngradePayload),
+        Box::new(windows_bcd_tamper::WindowsBcdTamperPayload),
+        Box::new(android_avb_rollback::AndroidAvbRollbackPayload),
+        Box::new(android_fastboot_unlock::AndroidFastbootUnlockPayload),
+        Box::new(android_keymint_downgrade::AndroidKeymintDowngradePayload),
+        Box::new(wifi_firmware_implant::WifiFirmwareImplantPayload),
+        Box::new(network_boot_redirect::NetworkBootRedirectPayload),
+        Box::new(bt_firmware_implant::BtFirmwareImplantPayload),
+        Box::new(trustcache_inject::TrustcacheInjectPayload),
+        Box::new(amfi_bypass::AmfiBypassPayload),
+        Box::new(ktrr_disable::KtrrDisablePayload),
+        Box::new(sep_downgrade::SepDowngradePayload),
     ]
 }
