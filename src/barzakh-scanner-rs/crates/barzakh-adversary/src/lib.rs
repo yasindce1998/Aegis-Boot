@@ -1,5 +1,6 @@
 pub mod corpus;
 pub mod deploy;
+pub mod harness;
 pub mod payloads;
 pub mod validate;
 

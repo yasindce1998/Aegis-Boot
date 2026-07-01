@@ -53,6 +53,9 @@ enum Commands {
 
     /// Display platform information and statistics
     Info,
+
+    /// Run the automated fuzzing harness
+    Fuzz(FuzzArgs),
 }
 
 // ─── Scan ────────────────────────────────────────────────────────────────────
@@ -154,6 +157,27 @@ struct ValidateArgs {
     json: bool,
 }
 
+// ─── Fuzz ───────────────────────────────────────────────────────────────────
+
+#[derive(Parser)]
+struct FuzzArgs {
+    /// Number of mutation iterations
+    #[arg(short, long, default_value = "1")]
+    iterations: u32,
+
+    /// Output directory for generated corpus
+    #[arg(short, long, default_value = "./fuzz_corpus")]
+    output_dir: PathBuf,
+
+    /// Enable payload mutation
+    #[arg(long)]
+    mutate: bool,
+
+    /// Output results as JSON
+    #[arg(long)]
+    json: bool,
+}
+
 // ─── Detectors ───────────────────────────────────────────────────────────────
 
 #[derive(Subcommand)]
@@ -224,6 +248,7 @@ fn run(cli: Cli) -> Result<()> {
             DetectorCommands::Info { name } => cmd_detectors_info(&name),
         },
         Commands::Info => cmd_info(),
+        Commands::Fuzz(args) => cmd_fuzz(args),
     }
 }
 
@@ -525,6 +550,73 @@ fn cmd_info() -> Result<()> {
     println!("    • Intel ME/Ring -3 (HECI, ME SPI, AMT, fTPM, ME DMA)");
     println!("    • Ring -4/Microarch (Microcode, Spectre, Thermal, Voltage, Debug, Rowhammer)");
     println!();
+
+    Ok(())
+}
+
+fn cmd_fuzz(args: FuzzArgs) -> Result<()> {
+    use barzakh_adversary::harness::{FuzzHarness, HarnessConfig};
+
+    let config = HarnessConfig {
+        iterations: args.iterations,
+        output_dir: args.output_dir.clone(),
+        mutate: args.mutate,
+        parallel: true,
+    };
+
+    if !args.json {
+        println!(
+            "{} Running fuzzing harness ({} iterations, mutate={})",
+            "▶".cyan().bold(),
+            args.iterations,
+            args.mutate
+        );
+        println!("  Output dir: {}", args.output_dir.display());
+    }
+
+    let harness = FuzzHarness::new(config);
+    let result = harness.run()?;
+
+    if args.json {
+        println!("{}", serde_json::to_string_pretty(&result)?);
+    } else {
+        println!();
+        println!(
+            "{} Fuzzing complete in {:.2}s",
+            "✓".green().bold(),
+            result.duration_secs
+        );
+        println!("  Total runs:  {}", result.total_runs.to_string().cyan());
+        println!(
+            "  Coverage:    {}",
+            format!("{:.1}%", result.gap_report.coverage_pct).green()
+        );
+        println!(
+            "  Gaps found:  {}",
+            result.gap_report.total_gaps.to_string().yellow()
+        );
+
+        if !result.gap_report.entries.is_empty() {
+            println!();
+            println!("  {}", "Detection Gaps:".bold());
+            for gap in &result.gap_report.entries {
+                println!(
+                    "    {} {} → missed: {}",
+                    "•".red(),
+                    gap.payload_name,
+                    gap.missed_detectors.join(", ")
+                );
+            }
+        }
+
+        if !result.gap_report.undetected_categories.is_empty() {
+            println!();
+            println!("  {}", "Undetected categories:".bold());
+            for cat in &result.gap_report.undetected_categories {
+                println!("    {} {}", "○".yellow(), cat);
+            }
+        }
+    }
 
     Ok(())
 }

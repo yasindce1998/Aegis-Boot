@@ -5,13 +5,16 @@ pub mod android_avb;
 pub mod android_binary_transparency;
 pub mod android_bootconfig;
 pub mod android_bootctrl;
+pub mod android_chain_validator;
 pub mod android_dice;
 pub mod android_fastboot;
 pub mod android_gki_boot;
+pub mod android_init_verity;
 pub mod android_keymint;
 pub mod android_pkvm;
 pub mod android_rkp;
 pub mod android_trusty;
+pub mod android_vbmeta_chain;
 pub mod android_vendor_dlkm;
 pub mod apple_img4;
 pub mod arm_tbbr;
@@ -23,7 +26,9 @@ pub mod blacklotus;
 pub mod bluetooth_firmware;
 pub mod bmc_spi;
 pub mod boot_guard;
+pub mod boot_guard_km;
 pub mod capsule_update;
+pub mod csme_update;
 pub mod confidential_vm;
 pub mod cxl_device;
 pub mod debug_interface;
@@ -43,7 +48,12 @@ pub mod insyde_smm;
 pub mod introspection;
 pub mod iommu_dmar;
 pub mod ios_amfi;
+pub mod ios_ane_boot;
+pub mod ios_iboot;
 pub mod ios_ktrr;
+pub mod ios_local_policy;
+pub mod ios_ppl;
+pub mod ios_secure_enclave;
 pub mod ios_sep_downgrade;
 pub mod ios_trustcache;
 pub mod linux_bootchain;
@@ -51,7 +61,9 @@ pub mod logofail;
 pub mod lvfs_integrity;
 pub mod mbr;
 pub mod me_dma;
+pub mod me_manufacturing_mode;
 pub mod me_spi;
+pub mod me_version_chain;
 pub mod memory;
 pub mod microcode_injection;
 pub mod msi_key_reuse;
@@ -66,6 +78,9 @@ pub mod pei_implant;
 pub mod pixiefail;
 pub mod pluton;
 pub mod pmp_bypass;
+pub mod psp_secure_debug;
+pub mod psp_trustlets;
+pub mod psp_version_chain;
 pub mod reloader;
 pub mod rowhammer;
 pub mod runtime;
@@ -77,6 +92,7 @@ pub mod secureboot_dbx;
 pub mod self_erasure;
 pub mod smm;
 pub mod smm_timing;
+pub mod smu_firmware;
 pub mod spectre_gadgets;
 pub mod spi_integrity;
 pub mod spi_region;
@@ -183,5 +199,21 @@ pub fn create_all_detectors(baseline: Option<Baseline>) -> Vec<Box<dyn Detector>
         Box::new(ios_amfi::IosAmfiDetector::new()),
         Box::new(ios_ktrr::IosKtrrDetector::new()),
         Box::new(ios_sep_downgrade::IosSepDowngradeDetector::new()),
+        Box::new(me_manufacturing_mode::MeManufacturingModeDetector::new()),
+        Box::new(me_version_chain::MeVersionChainDetector::new()),
+        Box::new(boot_guard_km::BootGuardKmDetector::new()),
+        Box::new(csme_update::CsmeUpdateDetector::new()),
+        Box::new(psp_version_chain::PspVersionChainDetector::new()),
+        Box::new(psp_trustlets::PspTrustletsDetector::new()),
+        Box::new(smu_firmware::SmuFirmwareDetector::new()),
+        Box::new(psp_secure_debug::PspSecureDebugDetector::new()),
+        Box::new(android_vbmeta_chain::AndroidVbmetaChainDetector::new()),
+        Box::new(android_init_verity::AndroidInitVerityDetector::new()),
+        Box::new(android_chain_validator::AndroidChainValidatorDetector::new()),
+        Box::new(ios_iboot::IosIbootDetector::new()),
+        Box::new(ios_ppl::IosPplDetector::new()),
+        Box::new(ios_secure_enclave::IosSecureEnclaveDetector::new()),
+        Box::new(ios_local_policy::IosLocalPolicyDetector::new()),
+        Box::new(ios_ane_boot::IosAneBootDetector::new()),
     ]
 }

@@ -1,8 +1,22 @@
 # Barzakh Scanner
 
-High-performance UEFI bootkit detection engine written in Rust.
+**An advanced firmware security research platform — built to hunt what antivirus can't see.**
 
-Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to detect bootkit artifacts with high accuracy and minimal false positives. It implements 89 specialized detectors covering the full spectrum of firmware-level threats across x86_64, AArch64, RISC-V, Android, and Apple/iOS architectures — from Ring 0 (UEFI DXE) down through Ring -4 (CPU microarchitecture), plus mobile boot chain attacks.
+Barzakh is a high-performance detection and red-team engine written in Rust that operates where traditional security tooling goes blind: below the OS, inside the silicon. It ships **105 detectors** and **94 adversarial payloads** spanning Ring 0 to Ring -4 — from UEFI DXE drivers through Intel ME, AMD PSP, ARM TrustZone, Apple Secure Enclave, and Android Verified Boot — with an automated fuzzing harness that continuously discovers detector blind spots.
+
+> **One scanner. Every boot chain. Every architecture.**
+> x86_64 · AArch64 · RISC-V · Android · iOS/Apple Silicon
+
+## Why Barzakh?
+
+| | |
+|---|---|
+| **105 Detectors** | From UEFI Secure Boot to Intel ME manufacturing mode to iOS Secure Enclave |
+| **94 Red-Team Payloads** | Generate realistic attack firmware on demand — rootkits, rollbacks, chain breaks |
+| **Automated Fuzzing** | Continuous generate → scan → gap discovery loop finds what your detectors miss |
+| **Full Chain Coverage** | Android (pKVM → DICE → GKI → Trusty) and iOS (iBoot → PPL → SEP → LocalPolicy) validated end-to-end |
+| **Ring -3 to Ring -4** | Intel ME, AMD PSP/SMU, CPU microcode, voltage glitch, Rowhammer — nothing is out of scope |
+| **Zero Runtime Dependencies** | Pure Rust, single static binary, no Python/Java/Docker required |
 
 ## Detection Capabilities
 
@@ -29,7 +43,7 @@ Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to
 | Symbolic Execution | Path constraint solving | Obfuscated trigger conditions |
 | Time-Travel Debug | Execution trace replay | Hidden execution paths |
 
-### Intel ME / Management Engine
+### Intel ME / Management Engine (Ring -3)
 
 | Detector | Technique | Targets |
 |----------|-----------|---------|
@@ -37,12 +51,25 @@ Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to
 | ME SPI Region | ME region structure validation | Tampered ME firmware partitions |
 | AMT/SOL | AMT provisioning state inspection | Unauthorized remote management |
 | fTPM Integrity | TPM2 command stream analysis | Forged fTPM responses |
+| ME Manufacturing Mode | Flash descriptor FITM bit inspection | ME stuck in manufacturing/debug mode |
+| ME Version Chain | $MN2 manifest SVN chain analysis | ME firmware version rollback attacks |
+| Boot Guard KM | Key Manifest / BPM structure + hash validation | Forged Boot Guard key manifests |
+| CSME Update | Update capsule integrity + version continuity | CSME update tampering / version skipping |
+
+### AMD PSP / SMU (Ring -3)
+
+| Detector | Technique | Targets |
+|----------|-----------|---------|
+| AMD PSP | PSP directory/entry validation | Tampered AMD Platform Security Processor firmware |
+| PSP Version Chain | PSP directory SVN chain analysis | PSP firmware version rollback |
+| PSP Trustlets | PSP L2 directory entry type validation | Rogue trustlet / TA injection |
+| SMU Firmware | SMU magic + signature + size validation | System Management Unit firmware tampering |
+| PSP Secure Debug | Debug unlock token / policy detection | Unauthorized PSP debug access |
 
 ### Platform Security
 
 | Detector | Technique | Targets |
 |----------|-----------|---------|
-| AMD PSP | PSP directory/entry validation | Tampered AMD Platform Security Processor firmware |
 | Intel Boot Guard | ACM/KM/BPM structure analysis | Boot Guard policy bypass, SVN rollback |
 | Auth Variable | Authenticated variable validation | PK/KEK/db rollback, missing signatures |
 
@@ -78,6 +105,33 @@ Barzakh Scanner analyzes firmware images, memory dumps, and boot measurements to
 |----------|-----------|---------|
 | OpenSBI | SBI extension table / mtvec / M-mode CSR analysis | OpenSBI firmware hooking, privilege escalation |
 | PMP Bypass | PMP config / CSR write / NOP sled detection | Physical Memory Protection misconfiguration exploits |
+
+### Android Boot Chain
+
+| Detector | Technique | Targets |
+|----------|-----------|---------|
+| Android AVB | Verified Boot rollback index validation | AVB version rollback attacks |
+| Android VBMeta Chain | Full hash descriptor chain + rollback index consistency | vbmeta → boot/dtbo/vendor_boot integrity bypass |
+| Android Init Verity | dm-verity/fs-verity + SELinux enforcement state | Disabled integrity for system/vendor partitions |
+| Android Chain Validator | Unified pKVM → DICE → GKI → Trusty chain linkage | Any broken link in the Android trust chain |
+| Android pKVM | Protected KVM hypervisor validation | pKVM escape / bypass attacks |
+| Android DICE | DICE certificate chain / CDI derivation | Forged DICE attestation |
+| Android GKI | Generic Kernel Image boot_signature validation | GKI tampering / unsigned kernel |
+| Android Trusty | Trusty TEE structure / secure monitor markers | Trusty OS manipulation |
+
+### iOS / Apple Silicon Boot Chain
+
+| Detector | Technique | Targets |
+|----------|-----------|---------|
+| iOS iBoot | iBoot magic / IMG4 signature / entrypoint validation | iBoot patching, checkm8-style exploits |
+| iOS PPL | Page Protection Layer lockdown markers (A12+) | PPL bypass for kernel page table manipulation |
+| iOS Secure Enclave | SEP firmware / RTKit header / key attestation | SEP firmware tampering, key extraction |
+| iOS LocalPolicy | Image4 `lpol` manifest / nonce-hash binding | Boot policy manipulation (1TR bypass) |
+| iOS ANE Boot | Apple Neural Engine firmware / IMG4 `ane0` payload | ANE firmware injection |
+| iOS TrustCache | Static/loadable trust cache validation | Unauthorized code execution via injected CDHashes |
+| iOS AMFI | AMFI policy / entitlement enforcement | Code signing bypass |
+| iOS KTRR | Kernel Text Read-only Region lockdown | KTRR bypass for kernel patching |
+| iOS SEP Downgrade | SEP firmware version/nonce validation | SEP rollback attacks |
 
 ### Ring -4 / CPU Microarchitecture
 
@@ -144,10 +198,10 @@ barzakh-scanner detectors
 barzakh-scanner info
 ```
 
-### barzakh-adversary (Offensive)
+### barzakh-adversary (Offensive / Fuzzing)
 
 ```bash
-# List all 64 available payloads
+# List all 94 adversarial payloads
 barzakh-adversary list
 
 # Generate payloads for a specific architecture
@@ -158,6 +212,9 @@ barzakh-adversary corpus --output ./corpus
 
 # Validate corpus against scanner (measure TPR/FPR)
 barzakh-adversary validate --corpus ./corpus
+
+# Run automated fuzzing harness (continuous gap discovery)
+barzakh-adversary fuzz --iterations 10 --mutate --json
 
 # Boot a payload in QEMU for live testing
 barzakh-adversary qemu --payload trampoline
@@ -178,21 +235,22 @@ barzakh-scanner-rs/
     │   │   ├── scanner.rs        # Scan orchestration
     │   │   ├── baseline.rs       # Baseline configuration
     │   │   ├── detector.rs       # Detector trait + types
-    │   │   ├── detectors/        # 89 detection modules
+    │   │   ├── detectors/        # 105 detection modules
     │   │   └── reports/          # HTML/JSON/Markdown reports
     │   └── tests/
     │       └── scanner_integration.rs
-    ├── barzakh-cli/              # Binary crate (produces `barzakh-scanner` + `barzakh-adversary`)
+    ├── barzakh-cli/              # Binary crate (scanner + adversary + fuzz CLIs)
     │   └── src/
     │       ├── main.rs           # Scanner CLI (defensive commands)
     │       └── adversary_main.rs # Adversary CLI (offensive commands)
-    └── barzakh-adversary/        # Red-team payload generator
+    └── barzakh-adversary/        # Red-team payload & fuzzing engine
         ├── src/
         │   ├── lib.rs            # Payload trait + public API
-        │   ├── payloads/         # 78 payload generators
+        │   ├── payloads/         # 94 adversarial payload generators
+        │   ├── harness/          # Automated fuzzing harness (generate → scan → gap → mutate)
         │   ├── validate/         # Scanner invocation + result comparison
         │   ├── corpus.rs         # Malicious/clean pair generator
-        │   └── deploy/           # ESP image builder + QEMU orchestration (WIP)
+        │   └── deploy/           # ESP image builder + QEMU orchestration
         └── tests/
             └── integration.rs    # Generate → scan → assert detection
 ```
@@ -209,7 +267,7 @@ barzakh-scanner-rs/
 ## Development
 
 ```bash
-# Run tests (22 integration + unit tests)
+# Run full test suite
 cargo test
 
 # Check formatting

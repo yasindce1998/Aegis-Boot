@@ -2,6 +2,7 @@ pub mod acpi_backdoor;
 pub mod amfi_bypass;
 pub mod amt_sol;
 pub mod android_avb_rollback;
+pub mod android_chain_break;
 pub mod android_bootconfig_inject;
 pub mod android_bootctrl_poison;
 pub mod android_bt_forge;
@@ -13,6 +14,8 @@ pub mod android_keymint_downgrade;
 pub mod android_pkvm_escape;
 pub mod android_rkp_spoof;
 pub mod android_trusty_tamper;
+pub mod android_vbmeta_tamper;
+pub mod android_verity_disable;
 pub mod apple_img4_downgrade;
 pub mod arm_iboot;
 pub mod arm_scm;
@@ -23,11 +26,13 @@ pub mod auth_var_rollback;
 pub mod blacklotus_mok;
 pub mod bmc_spi_lateral;
 pub mod boot_guard_bypass;
+pub mod boot_guard_km_forge;
 pub mod boot_services_hook;
 pub mod bootkitty_grub_patch;
 pub mod bt_firmware_implant;
 pub mod capsule_tamper;
 pub mod clkscrew_voltage;
+pub mod csme_update_tamper;
 pub mod cxl_dma_attack;
 pub mod dbx_rollback;
 pub mod dell_bios_connect;
@@ -41,12 +46,19 @@ pub mod heci_traffic;
 pub mod http_boot_mitm;
 pub mod idrac_spi_lateral;
 pub mod insyde_smm_capsule;
+pub mod ios_ane_inject;
+pub mod ios_iboot_patch;
+pub mod ios_policy_tamper;
+pub mod ios_ppl_bypass;
+pub mod ios_sep_forge;
 pub mod jtag_dci_unlock;
 pub mod ktrr_disable;
 pub mod logofail_image;
 pub mod lvfs_capsule_spoof;
 pub mod me_dma_inject;
+pub mod me_manufacturing_mode;
 pub mod me_spi_region;
+pub mod me_version_rollback;
 pub mod meltdown_pte_leak;
 pub mod microcode_malicious;
 pub mod msi_key_leak;
@@ -58,7 +70,10 @@ pub mod pei_core_patch;
 pub mod pixiefail_dhcp;
 pub mod plundervolt_sgx;
 pub mod pluton_intercept;
+pub mod psp_debug_unlock;
 pub mod psp_tamper;
+pub mod psp_trustlet_inject;
+pub mod psp_version_rollback;
 pub mod riscv_opensbi;
 pub mod riscv_pmp_bypass;
 pub mod riscv_uefi_boot;
@@ -72,6 +87,7 @@ pub mod sep_downgrade;
 pub mod sev_snp_vmpl_escape;
 pub mod signature_plant;
 pub mod smm_timing_anomaly;
+pub mod smu_firmware_tamper;
 pub mod spectre_btb_inject;
 pub mod spi_region_tamper;
 pub mod tdx_ovmf_inject;
@@ -171,5 +187,21 @@ pub fn create_all_payloads() -> Vec<Box<dyn Payload>> {
         Box::new(amfi_bypass::AmfiBypassPayload),
         Box::new(ktrr_disable::KtrrDisablePayload),
         Box::new(sep_downgrade::SepDowngradePayload),
+        Box::new(me_manufacturing_mode::MeManufacturingModePayload),
+        Box::new(me_version_rollback::MeVersionRollbackPayload),
+        Box::new(boot_guard_km_forge::BootGuardKmForgePayload),
+        Box::new(csme_update_tamper::CsmeUpdateTamperPayload),
+        Box::new(psp_version_rollback::PspVersionRollbackPayload),
+        Box::new(psp_trustlet_inject::PspTrustletInjectPayload),
+        Box::new(smu_firmware_tamper::SmuFirmwareTamperPayload),
+        Box::new(psp_debug_unlock::PspDebugUnlockPayload),
+        Box::new(android_vbmeta_tamper::AndroidVbmetaTamperPayload),
+        Box::new(android_verity_disable::AndroidVerityDisablePayload),
+        Box::new(android_chain_break::AndroidChainBreakPayload),
+        Box::new(ios_iboot_patch::IosIbootPatchPayload),
+        Box::new(ios_ppl_bypass::IosPplBypassPayload),
+        Box::new(ios_sep_forge::IosSepForgePayload),
+        Box::new(ios_policy_tamper::IosPolicyTamperPayload),
+        Box::new(ios_ane_inject::IosAneInjectPayload),
     ]
 }
